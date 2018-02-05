@@ -34,5 +34,5 @@
   version = "0.3.0"
 
 [[constraint]]
-  name = "github.com/songgao/ether"
-  revision = "9fe60a3d78273e9285566feca707fec03e7840da"
+  name = "github.com/google/gopacket"
+  version = "1.1.14"
