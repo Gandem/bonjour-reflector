@@ -7,9 +7,26 @@
   revision = "b26d9c308763d68093482582cea63d69be07a0f0"
   version = "v0.3.0"
 
+[[projects]]
+  name = "github.com/songgao/ether"
+  packages = ["."]
+  revision = "9fe60a3d78273e9285566feca707fec03e7840da"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/songgao/packets"
+  packages = ["ethernet"]
+  revision = "549a10cd4091c1e78542d3bb357036299cb9fcd6"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a8c4e8c53820bfbbeb17362c6ff6e9986dff0496086694b77dd1b3560317d100"
+  inputs-digest = "913c9da8df213d6b0b2a38796d592d38bc10f2dd4070a48569712dc58b7db0ba"
   solver-name = "gps-cdcl"
   solver-version = 1

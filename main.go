@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
+
+	"github.com/songgao/ether"
+	"github.com/songgao/packets/ethernet"
 )
 
 func main() {
@@ -16,5 +20,13 @@ func main() {
 		log.Fatalf("Could not list interfaces: %s", err)
 	}
 
-	log.Println(netInterface)
+	netDevice, err := ether.NewDev(netInterface, nil)
+	if err != nil {
+		log.Fatalf("Could not tap to interface: %s", err)
+	}
+
+	var res ethernet.Frame
+	netDevice.Read(&res)
+
+	fmt.Println(res)
 }

@@ -30,9 +30,9 @@
   unused-packages = true
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/mdlayher/raw"
-
-[[constraint]]
   name = "github.com/BurntSushi/toml"
   version = "0.3.0"
+
+[[constraint]]
+  name = "github.com/songgao/ether"
+  revision = "9fe60a3d78273e9285566feca707fec03e7840da"
