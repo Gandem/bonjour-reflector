@@ -41,7 +41,7 @@ func appendWithoutDuplicates(array1 []int, array2 []int) (result []int) {
 	return result
 }
 
-func mapAllPools(devices []bonjourDevice) map[int]([]int) {
+func mapByPool(devices []bonjourDevice) map[int]([]int) {
 	poolsMap := make(map[int]([]int))
 	for _, device := range devices {
 		for i, pool := range device.Pools {
@@ -52,4 +52,12 @@ func mapAllPools(devices []bonjourDevice) map[int]([]int) {
 		}
 	}
 	return poolsMap
+}
+
+func mapByAddress(devices []bonjourDevice) map[string]([]int) {
+	addressMap := make(map[string]([]int))
+	for _, device := range devices {
+		addressMap[device.MacAddress] = device.Pools
+	}
+	return addressMap
 }
