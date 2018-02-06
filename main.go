@@ -13,10 +13,13 @@ import (
 func main() {
 	cfg, err := readConfig("./config.toml")
 	if err != nil {
-		log.Fatalf("Could not read configuration : %v", err)
+		log.Fatalf("Could not read configuration: %v", err)
 	}
 
 	src, err := pcap.OpenLive(cfg.NetInterface, 65536, true, time.Second)
+	if err != nil {
+		log.Fatalf("Could not find network interface: %v", cfg.NetInterface)
+	}
 
 	var dec gopacket.Decoder
 	var ok bool
