@@ -1,1 +1,30 @@
 net_interface = "wls1" # Put here the network interface you want to use.
+
+[[devices]]
+description = "Test Chromecast"
+mac_address = "AA:BB:CC:DD:EE:FF"
+pools = [1078, 3597]
+pools_description = [
+    "John Doe",
+    "Jane Doe"
+]
+
+[[devices]]
+description = "Test Spotify Air"
+mac_address = "AA:00:CC:00:EE:00"
+pools = [1078, 1547, 2483]
+pools_description = [
+    "John Doe",
+    "Frank Dupond",
+    "Jean Poullain"
+]
+
+[[devices]]
+description = "Test Spotify Air"
+mac_address = "AA:00:CC:00:EE:00"
+pools = [1078, 1547, 3133]
+pools_description = [
+    "John Doe",
+    "Frank Dupond",
+    "Jean-Jacques Yves du Périgorac"
+]
