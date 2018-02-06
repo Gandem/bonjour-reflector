@@ -29,21 +29,17 @@ func main() {
 	var eth layers.Ethernet
 	var ip4 layers.IPv4
 	var ip6 layers.IPv6
-	var tcp layers.TCP
+	var udp layers.UDP
 	var tag layers.Dot1Q
-	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &tag, &eth, &ip4, &ip6, &tcp)
+	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &tag, &eth, &ip4, &ip6, &udp)
 	decoded := []gopacket.LayerType{}
 
 	for packet := range source.Packets() {
 		parser.DecodeLayers(packet.Data(), &decoded)
-		for _, layerType := range decoded {
-			switch layerType {
-			case layers.LayerTypeDot1Q:
-				fmt.Println(tag.VLANIdentifier)
-			case layers.LayerTypeEthernet:
-				fmt.Printf("Source MAC: %v, Dest MAC: %v \n", eth.DstMAC, eth.SrcMAC)
-			case layers.LayerTypeIPv4:
-				fmt.Printf("Source IP: %v, Dest IP: %v \n", ip4.SrcIP, ip4.DstIP)
+		// Detect Bonjour packets
+		if ip4.DstIP.String() == "224.0.0.251" {
+			if udp.SrcPort == 5353 && udp.DstPort == 5353 {
+				fmt.Printf("New Bonjour packet detected from %v\n", ip4.SrcIP)
 			}
 		}
 	}
