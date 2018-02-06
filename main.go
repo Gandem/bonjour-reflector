@@ -42,7 +42,10 @@ func main() {
 		// Detect Bonjour packets
 		if ip4.DstIP.String() == "224.0.0.251" || ip6.DstIP.String() == "ff02::fb" {
 			if udp.DstPort == 5353 {
-				fmt.Printf("New Bonjour packet detected from %v\n", ip4.SrcIP)
+				// Print time for logging / debugging purposes
+				t := time.Now()
+				fmt.Printf("[%02d/%02d/%d %02d:%02d:%02d] New Bonjour packet detected from %v\n",
+					t.Day(), t.Month(), t.Year(), t.Hour(), t.Minute(), t.Second(), ip4.SrcIP)
 			}
 		}
 	}
