@@ -43,9 +43,8 @@ func main() {
 		if ip4.DstIP.String() == "224.0.0.251" || ip6.DstIP.String() == "ff02::fb" {
 			if udp.DstPort == 5353 {
 				// Print time for logging / debugging purposes
-				t := time.Now()
-				fmt.Printf("[%02d/%02d/%d %02d:%02d:%02d] New Bonjour packet detected from %v\n",
-					t.Day(), t.Month(), t.Year(), t.Hour(), t.Minute(), t.Second(), ip4.SrcIP)
+				fmt.Printf("[%v] New Bonjour packet detected from %v\n",
+					time.Now().Format("02/01/2006 15:04:05"), ip4.SrcIP) // Custom time layouts must use the reference time: Mon Jan 2 15:04:05 MST 2006
 			}
 		}
 	}
