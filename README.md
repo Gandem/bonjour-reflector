@@ -2,7 +2,7 @@
 
 ## Installation
 
-You need [dep](https://github.com/golang/dep) to install the project dependancies.
+You need [dep](https://github.com/golang/dep) to install the project dependencies.
 Once you've installed dep, run:
 
 ```
@@ -15,7 +15,7 @@ One of the dependencies of the project (gopacket/pcap) also needs the libpcap he
 On Linux-based distributions, you can do this by installing the development version of libpcap.
 
 
-## Setup
+## App setup
 
 First, indicate in the `config.toml` file which of your network interfaces you want to listen to.
 
