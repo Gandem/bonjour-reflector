@@ -38,7 +38,7 @@ func main() {
 		parser.DecodeLayers(packet.Data(), &decoded)
 		// Detect Bonjour packets
 		if ip4.DstIP.String() == "224.0.0.251" {
-			if udp.SrcPort == 5353 && udp.DstPort == 5353 {
+			if udp.DstPort == 5353 {
 				fmt.Printf("New Bonjour packet detected from %v\n", ip4.SrcIP)
 			}
 		}
