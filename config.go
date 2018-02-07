@@ -12,8 +12,9 @@ type brconfig struct {
 }
 
 type bonjourDevice struct {
-	MacAddress string `toml:"mac_address"`
-	Pools      []int  `toml:"pools"`
+	MacAddress  string `toml:"mac_address"`
+	OriginPool  int    `toml:"origin_pool"`
+	SharedPools []int  `toml:"shared_pools"`
 }
 
 func readConfig(path string) (cfg brconfig, err error) {
@@ -25,30 +26,18 @@ func readConfig(path string) (cfg brconfig, err error) {
 	return cfg, err
 }
 
-func appendWithoutDuplicates(array1 []int, array2 []int) (result []int) {
-	seen := make(map[int]bool)
-	for _, num := range array1 {
-		seen[num] = true
-		result = append(result, num)
-
-	}
-	for _, num := range array2 {
-		if _, ok := seen[num]; !ok {
-			seen[num] = true
-			result = append(result, num)
-		}
-	}
-	return result
-}
-
 func mapByPool(devices []bonjourDevice) map[int]([]int) {
+	seen := make(map[int]map[int]bool)
 	poolsMap := make(map[int]([]int))
 	for _, device := range devices {
-		for i, pool := range device.Pools {
-			sharedWithPools := make([]int, len(device.Pools)-1)
-			copy(sharedWithPools, device.Pools[:i])
-			copy(sharedWithPools[i:], device.Pools[i+1:])
-			poolsMap[pool] = appendWithoutDuplicates(poolsMap[pool], sharedWithPools)
+		for _, pool := range device.SharedPools {
+			if _, ok := seen[pool]; !ok {
+				seen[pool] = make(map[int]bool)
+			}
+			if _, ok := seen[pool][device.OriginPool]; !ok {
+				seen[pool][device.OriginPool] = true
+				poolsMap[pool] = append(poolsMap[pool], device.OriginPool)
+			}
 		}
 	}
 	return poolsMap
@@ -57,7 +46,7 @@ func mapByPool(devices []bonjourDevice) map[int]([]int) {
 func mapByAddress(devices []bonjourDevice) map[string]([]int) {
 	addressMap := make(map[string]([]int))
 	for _, device := range devices {
-		addressMap[device.MacAddress] = device.Pools
+		addressMap[device.MacAddress] = device.SharedPools
 	}
 	return addressMap
 }
