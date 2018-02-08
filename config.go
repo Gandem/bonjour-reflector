@@ -6,15 +6,16 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type macAddress string
+
 type brconfig struct {
-	NetInterface string          `toml:"net_interface"`
-	Devices      []bonjourDevice `toml:"devices"`
+	NetInterface string                       `toml:"net_interface"`
+	Devices      map[macAddress]bonjourDevice `toml:"devices"`
 }
 
 type bonjourDevice struct {
-	MacAddress  string `toml:"mac_address"`
-	OriginPool  int    `toml:"origin_pool"`
-	SharedPools []int  `toml:"shared_pools"`
+	OriginPool  int   `toml:"origin_pool"`
+	SharedPools []int `toml:"shared_pools"`
 }
 
 func readConfig(path string) (cfg brconfig, err error) {
@@ -26,7 +27,7 @@ func readConfig(path string) (cfg brconfig, err error) {
 	return cfg, err
 }
 
-func mapByPool(devices []bonjourDevice) map[int]([]int) {
+func mapByPool(devices map[macAddress]bonjourDevice) map[int]([]int) {
 	seen := make(map[int]map[int]bool)
 	poolsMap := make(map[int]([]int))
 	for _, device := range devices {
@@ -41,12 +42,4 @@ func mapByPool(devices []bonjourDevice) map[int]([]int) {
 		}
 	}
 	return poolsMap
-}
-
-func mapByAddress(devices []bonjourDevice) map[string]([]int) {
-	addressMap := make(map[string]([]int))
-	for _, device := range devices {
-		addressMap[device.MacAddress] = device.SharedPools
-	}
-	return addressMap
 }

@@ -1,19 +1,18 @@
 net_interface = "wls1" # Put here the network interface you want to use.
 
-[[devices]]
-description = "Test Chromecast"
-mac_address = "AA:BB:CC:DD:EE:FF"
-origin_pool = 1078
-shared_pools = [1234, 3597]
+[devices]
 
-[[devices]]
-description = "Test Spotify Air"
-mac_address = "AA:00:CC:00:EE:00"
-origin_pool = 1078
-shared_pools = [1234, 1547, 2483]
+    [devices."AA:BB:CC:DD:EE:FF"]
+    description = "Test Chromecast"
+    origin_pool = 1078
+    shared_pools = [1234, 3597]
 
-[[devices]]
-description = "Test Spotify Air"
-mac_address = "AA:11:CC:11:EE:11"
-origin_pool = 1547
-shared_pools = [1078, 2483, 3133]
+    [devices."AA:00:CC:00:EE:00"]
+    description = "Test Spotify Air"
+    origin_pool = 1078
+    shared_pools = [1234, 1547, 2483]
+
+    [devices."AA:11:CC:11:EE:11"]
+    description = "Test Spotify Air"
+    origin_pool = 1547
+    shared_pools = [1078, 2483, 3133]
