@@ -14,8 +14,8 @@ type brconfig struct {
 }
 
 type bonjourDevice struct {
-	OriginPool  int   `toml:"origin_pool"`
-	SharedPools []int `toml:"shared_pools"`
+	OriginPool  uint16   `toml:"origin_pool"`
+	SharedPools []uint16 `toml:"shared_pools"`
 }
 
 func readConfig(path string) (cfg brconfig, err error) {
@@ -27,13 +27,13 @@ func readConfig(path string) (cfg brconfig, err error) {
 	return cfg, err
 }
 
-func mapByPool(devices map[macAddress]bonjourDevice) map[int]([]int) {
-	seen := make(map[int]map[int]bool)
-	poolsMap := make(map[int]([]int))
+func mapByPool(devices map[macAddress]bonjourDevice) map[uint16]([]uint16) {
+	seen := make(map[uint16]map[uint16]bool)
+	poolsMap := make(map[uint16]([]uint16))
 	for _, device := range devices {
 		for _, pool := range device.SharedPools {
 			if _, ok := seen[pool]; !ok {
-				seen[pool] = make(map[int]bool)
+				seen[pool] = make(map[uint16]bool)
 			}
 			if _, ok := seen[pool][device.OriginPool]; !ok {
 				seen[pool][device.OriginPool] = true
