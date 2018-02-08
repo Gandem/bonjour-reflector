@@ -57,7 +57,7 @@ func main() {
 			if udp.DstPort == 5353 {
 				// Print time for logging / debugging purposes
 				fmt.Printf("[%v] New Bonjour packet detected from %v\n",
-					time.Now().Format("02/01/2006 15:04:05"), ip4.SrcIP.String()) // Custom time layouts must use the reference time: Mon Jan 2 15:04:05 MST 2006
+					time.Now().Format("02/01/2006 15:04:05"), getPacketIPSource(ip4, ip6)) // Custom time layouts must use the reference time: Mon Jan 2 15:04:05 MST 2006
 				dns, err := parseDNSPacket(udp.Payload)
 				if err != nil {
 					log.Println(err)
@@ -66,6 +66,13 @@ func main() {
 			}
 		}
 	}
+}
+
+func getPacketIPSource(ip4 layers.IPv4, ip6 layers.IPv6) string {
+	if ip4.SrcIP != nil {
+		return ip4.SrcIP.String()
+	}
+	return ip6.SrcIP.String()
 }
 
 func parseDNSPacket(payload []byte) (layers.DNS, error) {
