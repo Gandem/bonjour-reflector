@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"time"
 
 	"github.com/google/gopacket"
@@ -21,11 +22,18 @@ func main() {
 		log.Fatalf("Could not find network interface: %v", cfg.NetInterface)
 	}
 
+	// Get the Mac Address to filter for Bonjour packet duplicates
+	intf, err := net.InterfaceByName(cfg.NetInterface)
+	if err != nil {
+		log.Fatal(err)
+	}
+	brMACAddress := intf.HardwareAddr
+
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
 
 	source := gopacket.NewPacketSource(rawTraffic, decoder)
 
-	bonjourPackets := filterBonjourPacketsLazily(source)
+	bonjourPackets := filterBonjourPacketsLazily(source, brMACAddress)
 
 	for bonjourPacket := range bonjourPackets {
 		fmt.Println(bonjourPacket.packet.String())
@@ -34,13 +42,22 @@ func main() {
 				if tags, ok := poolsMap[*bonjourPacket.vlanTag]; ok {
 					for _, tag := range tags {
 						*bonjourPacket.vlanTag = tag
+						*bonjourPacket.srcMAC = brMACAddress
 						buf := gopacket.NewSerializeBuffer()
 						gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
 						rawTraffic.WritePacketData(buf.Bytes())
 					}
 				}
 			} else {
-				// redirect to map by mac
+				if device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]; ok {
+					for _, tag := range device.SharedPools {
+						*bonjourPacket.vlanTag = tag
+						*bonjourPacket.srcMAC = brMACAddress
+						buf := gopacket.NewSerializeBuffer()
+						gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
+						rawTraffic.WritePacketData(buf.Bytes())
+					}
+				}
 			}
 		}
 	}

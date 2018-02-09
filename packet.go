@@ -9,12 +9,13 @@ import (
 
 type bonjourPacket struct {
 	packet     gopacket.Packet
-	srcMAC     macAddress
+	srcMAC     *net.HardwareAddr
 	vlanTag    *uint16
 	isDNSQuery bool
 }
 
-func filterBonjourPacketsLazily(source *gopacket.PacketSource) chan bonjourPacket {
+func filterBonjourPacketsLazily(source *gopacket.PacketSource, brMACAddress net.HardwareAddr) chan bonjourPacket {
+
 	// Set decoding to Lazy
 	source.DecodeOptions = gopacket.DecodeOptions{Lazy: true}
 
@@ -24,19 +25,23 @@ func filterBonjourPacketsLazily(source *gopacket.PacketSource) chan bonjourPacke
 		for packet := range source.Packets() {
 			tag := parseVLANTag(packet)
 			srcMAC := parseEthernetLayer(packet)
+			if srcMAC.String() == brMACAddress.String() {
+				continue
+			}
+
 			dstIP := parseIPLayer(packet)
 
 			if dstIP.String() != "224.0.0.251" && dstIP.String() != "ff02::fb" {
 				continue
 			}
 
-			dstPort := parseUDPLayer(packet)
+			dstPort, payload := parseUDPLayer(packet)
 
 			if dstPort != 5353 {
 				continue
 			}
 
-			isDNSQuery := parseDNSLayer(packet)
+			isDNSQuery := parseDNSPayload(payload)
 
 			// pass on the packet for its next adventure
 			packetChan <- bonjourPacket{
@@ -51,13 +56,11 @@ func filterBonjourPacketsLazily(source *gopacket.PacketSource) chan bonjourPacke
 	return packetChan
 }
 
-func parseEthernetLayer(packet gopacket.Packet) macAddress {
-	var eth layers.Ethernet
-
+func parseEthernetLayer(packet gopacket.Packet) (srcMAC *net.HardwareAddr) {
 	if parsedEth := packet.Layer(layers.LayerTypeEthernet); parsedEth != nil {
-		eth = *parsedEth.(*layers.Ethernet)
+		srcMAC = &parsedEth.(*layers.Ethernet).SrcMAC
 	}
-	return macAddress(eth.SrcMAC.String())
+	return srcMAC
 }
 
 func parseVLANTag(packet gopacket.Packet) (tag *uint16) {
@@ -77,16 +80,18 @@ func parseIPLayer(packet gopacket.Packet) (dstIP net.IP) {
 	return
 }
 
-func parseUDPLayer(packet gopacket.Packet) (dstPort layers.UDPPort) {
+func parseUDPLayer(packet gopacket.Packet) (dstPort layers.UDPPort, payload []byte) {
 	if parsedUDP := packet.Layer(layers.LayerTypeUDP); parsedUDP != nil {
 		dstPort = parsedUDP.(*layers.UDP).DstPort
+		payload = parsedUDP.(*layers.UDP).Payload
 	}
 	return
 }
 
-func parseDNSLayer(packet gopacket.Packet) (isDNSQuery bool) {
+func parseDNSPayload(payload []byte) (isDNSQuery bool) {
+	packet := gopacket.NewPacket(payload, layers.LayerTypeDNS, gopacket.Default)
 	if parsedDNS := packet.Layer(layers.LayerTypeDNS); parsedDNS != nil {
-		isDNSQuery = parsedDNS.(*layers.DNS).QR
+		isDNSQuery = !parsedDNS.(*layers.DNS).QR
 	}
 	return
 }
