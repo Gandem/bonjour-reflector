@@ -1,9 +1,11 @@
 package main
 
 import (
+	"io"
 	"net"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -81,8 +83,8 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 				Name:  []byte("example.com"),
 				Type:  layers.DNSTypeA,
 				Class: layers.DNSClassIN,
-				TTL: 1024,
-				IP: net.IP([]byte{1, 2, 3, 4}),
+				TTL:   1024,
+				IP:    net.IP([]byte{1, 2, 3, 4}),
 			}},
 			ANCount: 1,
 			QR: true,
@@ -188,5 +190,70 @@ func TestParseDNSPayload(t *testing.T) {
 	answerComputedResult := parseDNSPayload(answerPacketPayload)
 	if !reflect.DeepEqual(answerExpectedResult, answerComputedResult) {
 		t.Error("Error in parseDNSPayload() for DNS answers")
+	}
+}
+
+type dataSource struct {
+	packetSent bool
+	data       []byte
+}
+
+func (dataSource *dataSource) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err error) {
+	// Return one packet.
+	// If a packet has already been returned in the past, return an EOF error
+	// to end the reading of packets from this source.
+	data = dataSource.data
+	ci = gopacket.CaptureInfo{
+		Timestamp:      time.Time{},
+		CaptureLength:  len(data),
+		Length:         ci.CaptureLength,
+		InterfaceIndex: 0,
+	}
+	if !dataSource.packetSent {
+		dataSource.packetSent = true
+		return data, ci, nil
+	}
+	return nil, ci, io.EOF
+}
+
+func createMockPacketSource() (packetSource *gopacket.PacketSource, packet gopacket.Packet) {
+	data := createMockmDNSPacket(true, true)
+	dataSource := &dataSource{
+		packetSent: false,
+		data:       data,
+	}
+	decoder := gopacket.DecodersByLayerName["Ethernet"]
+	packetSource = gopacket.NewPacketSource(dataSource, decoder)
+	packet = gopacket.NewPacket(data, decoder, gopacket.DecodeOptions{Lazy: true})
+	return
+}
+
+func areBonjourPacketsEqual(a, b bonjourPacket) (areEqual bool) {
+	areEqual = *a.vlanTag == *b.vlanTag && a.srcMAC.String() == b.srcMAC.String() && a.isDNSQuery && b.isDNSQuery
+	// While comparing Bonjour packets, we do not want to compare packets entirely.
+	// In particular, packet.metadata may be slightly different, we do not need them to be the same.
+	// So we only compare the layers part of the packets.
+	areEqual = areEqual && reflect.DeepEqual(a.packet.Layers(), b.packet.Layers())
+	return
+}
+
+func TestFilterBonjourPacketsLazily(t *testing.T) {
+	mockPacketSource, packet := createMockPacketSource()
+
+	brMACaddress := net.HardwareAddr{0xF2, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
+	packetChan := filterBonjourPacketsLazily(mockPacketSource, brMACaddress)
+
+	vlanTag := uint16(30)
+	srcMAC := net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
+	expectedResult := bonjourPacket{
+		packet:     packet,
+		vlanTag:    &vlanTag,
+		srcMAC:     &srcMAC,
+		isDNSQuery: true,
+	}
+
+	computedResult := <-packetChan
+	if !areBonjourPacketsEqual(expectedResult, computedResult) {
+		t.Error("Error in filterBonjourPacketsLazily()")
 	}
 }
