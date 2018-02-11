@@ -43,9 +43,7 @@ func main() {
 					for _, tag := range tags {
 						*bonjourPacket.vlanTag = tag
 						*bonjourPacket.srcMAC = brMACAddress
-						buf := gopacket.NewSerializeBuffer()
-						gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
-						rawTraffic.WritePacketData(buf.Bytes())
+						sendBonjourPacket(rawTraffic, bonjourPacket.packet)
 					}
 				}
 			} else {
@@ -53,12 +51,16 @@ func main() {
 					for _, tag := range device.SharedPools {
 						*bonjourPacket.vlanTag = tag
 						*bonjourPacket.srcMAC = brMACAddress
-						buf := gopacket.NewSerializeBuffer()
-						gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
-						rawTraffic.WritePacketData(buf.Bytes())
+						sendBonjourPacket(rawTraffic, bonjourPacket.packet)
 					}
 				}
 			}
 		}
 	}
+}
+
+func sendBonjourPacket(handle *pcap.Handle, packet gopacket.Packet) {
+	buf := gopacket.NewSerializeBuffer()
+	gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, packet)
+	handle.WritePacketData(buf.Bytes())
 }
