@@ -229,7 +229,7 @@ func createMockPacketSource() (packetSource *gopacket.PacketSource, packet gopac
 }
 
 func areBonjourPacketsEqual(a, b bonjourPacket) (areEqual bool) {
-	areEqual = *a.vlanTag == *b.vlanTag && a.srcMAC.String() == b.srcMAC.String() && a.isDNSQuery && b.isDNSQuery
+	areEqual = *a.vlanTag == *b.vlanTag && a.srcMAC.String() == b.srcMAC.String() && a.isDNSQuery == b.isDNSQuery
 	// While comparing Bonjour packets, we do not want to compare packets entirely.
 	// In particular, packet.metadata may be slightly different, we do not need them to be the same.
 	// So we only compare the layers part of the packets.
