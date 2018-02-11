@@ -176,7 +176,7 @@ func TestParseDNSPayload(t *testing.T) {
 
 	_, answerPacketPayload := parseUDPLayer(answerPacket)
 
-	answerExpectedResult := true
+	answerExpectedResult := false
 	answerComputedResult := parseDNSPayload(answerPacketPayload)
 	if !reflect.DeepEqual(answerExpectedResult, answerComputedResult) {
 		t.Error("Error in parseDNSPayload() for DNS answers")
