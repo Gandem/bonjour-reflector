@@ -63,6 +63,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 				Type:  layers.DNSTypeA,
 				Class: layers.DNSClassIN,
 			}},
+			QDCount: 1,
 		}
 	} else {
 		dnsLayer = &layers.DNS{
@@ -73,6 +74,8 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 				TTL: 1024,
 				IP: net.IP([]byte{1, 2, 3, 4}),
 			}},
+			ANCount: 1,
+			QR: true,
 		}
 	}
 
@@ -166,7 +169,7 @@ func TestParseDNSPayload(t *testing.T) {
 	questionExpectedResult := true
 	questionComputedResult := parseDNSPayload(questionPacketPayload)
 	if !reflect.DeepEqual(questionExpectedResult, questionComputedResult) {
-		t.Error("Error in parseUDPLayer()")
+		t.Error("Error in parseDNSPayload() for DNS queries")
 	}
 
 	answerPacket := gopacket.NewPacket(createMockmDNSPacket(true, false), decoder, options)
@@ -176,6 +179,6 @@ func TestParseDNSPayload(t *testing.T) {
 	answerExpectedResult := true
 	answerComputedResult := parseDNSPayload(answerPacketPayload)
 	if !reflect.DeepEqual(answerExpectedResult, answerComputedResult) {
-		t.Error("Error in parseUDPLayer()")
+		t.Error("Error in parseDNSPayload() for DNS answers")
 	}
 }
