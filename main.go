@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"time"
 
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 )
 
@@ -15,36 +15,49 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not read configuration: %v", err)
 	}
+	poolsMap := mapByPool(cfg.Devices)
 
-	src, err := pcap.OpenLive(cfg.NetInterface, 65536, true, time.Second)
+	rawTraffic, err := pcap.OpenLive(cfg.NetInterface, 65536, true, time.Second)
 	if err != nil {
 		log.Fatalf("Could not find network interface: %v", cfg.NetInterface)
 	}
 
-	var dec gopacket.Decoder
-	var ok bool
-
-	if dec, ok = gopacket.DecodersByLayerName["Ethernet"]; !ok {
-		log.Fatalln("No decoder named Ethernet")
+	// Get the Mac Address to filter for Bonjour packet duplicates
+	intf, err := net.InterfaceByName(cfg.NetInterface)
+	if err != nil {
+		log.Fatal(err)
 	}
-	source := gopacket.NewPacketSource(src, dec)
+	brMACAddress := intf.HardwareAddr
 
-	var eth layers.Ethernet
-	var ip4 layers.IPv4
-	var ip6 layers.IPv6
-	var udp layers.UDP
-	var tag layers.Dot1Q
-	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &tag, &eth, &ip4, &ip6, &udp)
-	decoded := []gopacket.LayerType{}
+	decoder := gopacket.DecodersByLayerName["Ethernet"]
 
-	for packet := range source.Packets() {
-		parser.DecodeLayers(packet.Data(), &decoded)
-		// Detect Bonjour packets
-		if ip4.DstIP.String() == "224.0.0.251" || ip6.DstIP.String() == "ff02::fb" {
-			if udp.DstPort == 5353 {
-				// Print time for logging / debugging purposes
-				fmt.Printf("[%v] New Bonjour packet detected from %v\n",
-					time.Now().Format("02/01/2006 15:04:05"), ip4.SrcIP) // Custom time layouts must use the reference time: Mon Jan 2 15:04:05 MST 2006
+	source := gopacket.NewPacketSource(rawTraffic, decoder)
+
+	bonjourPackets := filterBonjourPacketsLazily(source, brMACAddress)
+
+	for bonjourPacket := range bonjourPackets {
+		fmt.Println(bonjourPacket.packet.String())
+		if bonjourPacket.vlanTag != nil {
+			if bonjourPacket.isDNSQuery {
+				if tags, ok := poolsMap[*bonjourPacket.vlanTag]; ok {
+					for _, tag := range tags {
+						*bonjourPacket.vlanTag = tag
+						*bonjourPacket.srcMAC = brMACAddress
+						buf := gopacket.NewSerializeBuffer()
+						gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
+						rawTraffic.WritePacketData(buf.Bytes())
+					}
+				}
+			} else {
+				if device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]; ok {
+					for _, tag := range device.SharedPools {
+						*bonjourPacket.vlanTag = tag
+						*bonjourPacket.srcMAC = brMACAddress
+						buf := gopacket.NewSerializeBuffer()
+						gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
+						rawTraffic.WritePacketData(buf.Bytes())
+					}
+				}
 			}
 		}
 	}
