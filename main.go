@@ -46,17 +46,13 @@ func main() {
 			if bonjourPacket.isDNSQuery {
 				if tags, ok := poolsMap[*bonjourPacket.vlanTag]; ok {
 					for _, tag := range tags {
-						*bonjourPacket.vlanTag = tag
-						*bonjourPacket.srcMAC = brMACAddress
-						sendBonjourPacket(rawTraffic, bonjourPacket.packet)
+						sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
 					}
 				}
 			} else {
 				if device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]; ok {
 					for _, tag := range device.SharedPools {
-						*bonjourPacket.vlanTag = tag
-						*bonjourPacket.srcMAC = brMACAddress
-						sendBonjourPacket(rawTraffic, bonjourPacket.packet)
+						sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
 					}
 				}
 			}
@@ -64,8 +60,10 @@ func main() {
 	}
 }
 
-func sendBonjourPacket(handle *pcap.Handle, packet gopacket.Packet) {
+func sendBonjourPacket(handle *pcap.Handle, bonjourPacket *bonjourPacket, tag uint16, brMACAddress net.HardwareAddr) {
+	*bonjourPacket.vlanTag = tag
+	*bonjourPacket.srcMAC = brMACAddress
 	buf := gopacket.NewSerializeBuffer()
-	gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, packet)
+	gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
 	handle.WritePacketData(buf.Bytes())
 }
