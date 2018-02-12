@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 )
 
 type bonjourPacket struct {
@@ -97,4 +98,12 @@ func parseDNSPayload(payload []byte) (isDNSQuery bool) {
 		isDNSQuery = !parsedDNS.(*layers.DNS).QR
 	}
 	return
+}
+
+func sendBonjourPacket(handle *pcap.Handle, bonjourPacket *bonjourPacket, tag uint16, brMACAddress net.HardwareAddr) {
+	*bonjourPacket.vlanTag = tag
+	*bonjourPacket.srcMAC = brMACAddress
+	buf := gopacket.NewSerializeBuffer()
+	gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
+	handle.WritePacketData(buf.Bytes())
 }
