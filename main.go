@@ -10,8 +10,10 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
+const configPath = "./config.toml"
+
 func main() {
-	cfg, err := readConfig("./config.toml")
+	cfg, err := readConfig(configPath)
 	if err != nil {
 		log.Fatalf("Could not read configuration: %v", err)
 	}
