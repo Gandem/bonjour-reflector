@@ -9,26 +9,35 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
+var srcMACTest = net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
+var dstMACTest = net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD}
+var vlanIdentifierTest = uint16(30)
+var srcIPv4Test = net.IP{127, 0, 0, 1}
+var dstIPv4Test = net.IP{224, 0, 0, 251}
+var srcIPv6Test = net.ParseIP("::1")
+var dstIPv6Test = net.ParseIP("ff02::fb")
+var srcUDPPortTest = layers.UDPPort(5353)
+var dstUDPPortTest = layers.UDPPort(5353)
+
+
 func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
-	var options gopacket.SerializeOptions
 	var ethernetLayer, dot1QLayer, ipLayer, udpLayer, dnsLayer gopacket.SerializableLayer
 
 	ethernetLayer = &layers.Ethernet{
-		SrcMAC:       net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA},
-		DstMAC:       net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD},
+		SrcMAC:       srcMACTest,
+		DstMAC:       dstMACTest,
 		EthernetType: layers.EthernetTypeDot1Q,
 	}
 
 	if isIPv4 {
 		dot1QLayer = &layers.Dot1Q{
-			Priority:       uint8(3),
-			VLANIdentifier: uint16(30),
+			VLANIdentifier: vlanIdentifierTest,
 			Type:           layers.EthernetTypeIPv4,
 		}
 
 		ipLayer = &layers.IPv4{
-			SrcIP:    net.IP{127, 0, 0, 1},
-			DstIP:    net.IP{224, 0, 0, 251},
+			SrcIP:    srcIPv4Test,
+			DstIP:    dstIPv4Test,
 			Version:  4,
 			Protocol: layers.IPProtocolUDP,
 			Length:   146,
@@ -37,14 +46,13 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 		}
 	} else {
 		dot1QLayer = &layers.Dot1Q{
-			Priority:       uint8(3),
-			VLANIdentifier: uint16(30),
+			VLANIdentifier: vlanIdentifierTest,
 			Type:           layers.EthernetTypeIPv6,
 		}
 
 		ipLayer = &layers.IPv6{
-			SrcIP:      net.ParseIP("::1"),
-			DstIP:      net.ParseIP("ff02::fb"),
+			SrcIP:      srcIPv6Test,
+			DstIP:      dstIPv6Test,
 			Version:    6,
 			Length:     48,
 			NextHeader: layers.IPProtocolUDP,
@@ -52,8 +60,8 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 	}
 
 	udpLayer = &layers.UDP{
-		SrcPort: layers.UDPPort(5353),
-		DstPort: layers.UDPPort(5353),
+		SrcPort: srcUDPPortTest,
+		DstPort: dstUDPPortTest,
 	}
 
 	if isDNSQuery {
@@ -82,7 +90,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 	buffer := gopacket.NewSerializeBuffer()
 	gopacket.SerializeLayers(
 		buffer,
-		options,
+		gopacket.SerializeOptions{},
 		ethernetLayer,
 		dot1QLayer,
 		ipLayer,
@@ -98,7 +106,7 @@ func TestParseEthernetLayer(t *testing.T) {
 
 	packet := gopacket.NewPacket(createMockmDNSPacket(true, true), decoder, options)
 
-	expectedResult := &net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
+	expectedResult := &srcMACTest
 	computedResult := parseEthernetLayer(packet)
 	if !reflect.DeepEqual(expectedResult, computedResult) {
 		t.Error("Error in parseEthernetLayer()")
@@ -112,10 +120,8 @@ func TestParseVLANTag(t *testing.T) {
 	packet := gopacket.NewPacket(createMockmDNSPacket(true, true), decoder, options)
 
 	expectedLayer := &layers.Dot1Q{
-		Priority:       uint8(3),
-		DropEligible:   true,
-		VLANIdentifier: uint16(30),
-		Type:           layers.EthernetTypeIPv6,
+		VLANIdentifier: vlanIdentifierTest,
+		Type:           layers.EthernetTypeIPv4,
 	}
 	expectedResult := &expectedLayer.VLANIdentifier
 	computedResult := parseVLANTag(packet)
@@ -130,7 +136,7 @@ func TestParseIPLayer(t *testing.T) {
 
 	ipv4Packet := gopacket.NewPacket(createMockmDNSPacket(true, true), decoder, options)
 
-	ipv4ExpectedResult := net.IP{224, 0, 0, 251}
+	ipv4ExpectedResult := dstIPv4Test
 	ipv4ComputedResult := parseIPLayer(ipv4Packet)
 	if !reflect.DeepEqual(ipv4ExpectedResult, ipv4ComputedResult) {
 		t.Error("Error in parseIPLayer() for IPv4 addresses")
@@ -138,7 +144,7 @@ func TestParseIPLayer(t *testing.T) {
 
 	ipv6Packet := gopacket.NewPacket(createMockmDNSPacket(false, true), decoder, options)
 
-	ipv6ExpectedResult := net.ParseIP("ff02::fb")
+	ipv6ExpectedResult := dstIPv6Test
 	ipv6ComputedResult := parseIPLayer(ipv6Packet)
 	if !reflect.DeepEqual(ipv6ExpectedResult, ipv6ComputedResult) {
 		t.Error("Error in parseIPLayer() for IPv6 addresses")
@@ -151,7 +157,7 @@ func TestParseUDPLayer(t *testing.T) {
 
 	packet := gopacket.NewPacket(createMockmDNSPacket(true, true), decoder, options)
 
-	expectedResult := layers.UDPPort(5353)
+	expectedResult := dstUDPPortTest
 	computedResult, _ := parseUDPLayer(packet)
 	if !reflect.DeepEqual(expectedResult, computedResult) {
 		t.Error("Error in parseUDPLayer()")
