@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -10,11 +11,11 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-const configPath = "./config.toml"
-
 func main() {
 	// Read config file and generate mDNS forwarding maps
-	cfg, err := readConfig(configPath)
+	configPath := flag.String("config", "", "Config file in TOML format")
+	flag.Parse()
+	cfg, err := readConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Could not read configuration: %v", err)
 	}
