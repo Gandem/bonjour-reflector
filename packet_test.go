@@ -109,9 +109,9 @@ func TestParseEthernetLayer(t *testing.T) {
 
 	packet := gopacket.NewPacket(createMockmDNSPacket(true, true), decoder, options)
 
-	expectedResult := &srcMACTest
-	computedResult := parseEthernetLayer(packet)
-	if !reflect.DeepEqual(expectedResult, computedResult) {
+	expectedResult1, expectedResult2 := &srcMACTest, &dstMACTest
+	computedResult1, computedResult2 := parseEthernetLayer(packet)
+	if !reflect.DeepEqual(expectedResult1, computedResult1) || !reflect.DeepEqual(expectedResult2, computedResult2) {
 		t.Error("Error in parseEthernetLayer()")
 	}
 }
