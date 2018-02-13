@@ -15,6 +15,9 @@ func main() {
 	// Read config file and generate mDNS forwarding maps
 	configPath := flag.String("config", "", "Config file in TOML format")
 	flag.Parse()
+	if *configPath == "" {
+		*configPath = "./config.toml"
+	}
 	cfg, err := readConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Could not read configuration: %v", err)
