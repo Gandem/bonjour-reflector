@@ -12,17 +12,16 @@ import (
 )
 
 var (
-	srcMACTest = net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
-	dstMACTest = net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD}
+	srcMACTest         = net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
+	dstMACTest         = net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD}
 	vlanIdentifierTest = uint16(30)
-	srcIPv4Test = net.IP{127, 0, 0, 1}
-	dstIPv4Test = net.IP{224, 0, 0, 251}
-	srcIPv6Test = net.ParseIP("::1")
-	dstIPv6Test = net.ParseIP("ff02::fb")
-	srcUDPPortTest = layers.UDPPort(5353)
-	dstUDPPortTest = layers.UDPPort(5353)
+	srcIPv4Test        = net.IP{127, 0, 0, 1}
+	dstIPv4Test        = net.IP{224, 0, 0, 251}
+	srcIPv6Test        = net.ParseIP("::1")
+	dstIPv6Test        = net.ParseIP("ff02::fb")
+	srcUDPPortTest     = layers.UDPPort(5353)
+	dstUDPPortTest     = layers.UDPPort(5353)
 )
-
 
 func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 	var ethernetLayer, dot1QLayer, ipLayer, udpLayer, dnsLayer gopacket.SerializableLayer
@@ -87,7 +86,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 				IP:    net.IP([]byte{1, 2, 3, 4}),
 			}},
 			ANCount: 1,
-			QR: true,
+			QR:      true,
 		}
 	}
 
