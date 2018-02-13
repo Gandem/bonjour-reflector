@@ -137,19 +137,19 @@ func TestParseIPLayer(t *testing.T) {
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
 	options := gopacket.DecodeOptions{Lazy: true}
 
-	ipv4Packet := gopacket.NewPacket(createMockmDNSPacket(true, true), decoder, options)
+	isIPv4 := true
+	ipv4Packet := gopacket.NewPacket(createMockmDNSPacket(isIPv4, true), decoder, options)
 
-	ipv4ExpectedResult := dstIPv4Test
-	ipv4ComputedResult := parseIPLayer(ipv4Packet)
-	if !reflect.DeepEqual(ipv4ExpectedResult, ipv4ComputedResult) {
+	computedIPv4, computedIsIPv6 := parseIPLayer(ipv4Packet)
+	if !reflect.DeepEqual(dstIPv4Test, computedIPv4) || (computedIsIPv6 == isIPv4) {
 		t.Error("Error in parseIPLayer() for IPv4 addresses")
 	}
 
-	ipv6Packet := gopacket.NewPacket(createMockmDNSPacket(false, true), decoder, options)
+	isIPv4 = false
+	ipv6Packet := gopacket.NewPacket(createMockmDNSPacket(isIPv4, true), decoder, options)
 
-	ipv6ExpectedResult := dstIPv6Test
-	ipv6ComputedResult := parseIPLayer(ipv6Packet)
-	if !reflect.DeepEqual(ipv6ExpectedResult, ipv6ComputedResult) {
+	computedIPv6, computedIsIPv6 := parseIPLayer(ipv6Packet)
+	if !reflect.DeepEqual(dstIPv6Test, computedIPv6) || (computedIsIPv6 == isIPv4) {
 		t.Error("Error in parseIPLayer() for IPv6 addresses")
 	}
 }
