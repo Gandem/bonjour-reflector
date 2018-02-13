@@ -14,6 +14,7 @@ import (
 var (
 	srcMACTest         = net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
 	dstMACTest         = net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD}
+	brMACTest          = net.HardwareAddr{0xF2, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
 	vlanIdentifierTest = uint16(30)
 	srcIPv4Test        = net.IP{127, 0, 0, 1}
 	dstIPv4Test        = net.IP{224, 0, 0, 251}
@@ -238,16 +239,12 @@ func areBonjourPacketsEqual(a, b bonjourPacket) (areEqual bool) {
 
 func TestFilterBonjourPacketsLazily(t *testing.T) {
 	mockPacketSource, packet := createMockPacketSource()
+	packetChan := filterBonjourPacketsLazily(mockPacketSource, brMACTest)
 
-	brMACaddress := net.HardwareAddr{0xF2, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
-	packetChan := filterBonjourPacketsLazily(mockPacketSource, brMACaddress)
-
-	vlanTag := uint16(30)
-	srcMAC := net.HardwareAddr{0xFF, 0xAA, 0xFA, 0xAA, 0xFF, 0xAA}
 	expectedResult := bonjourPacket{
 		packet:     packet,
-		vlanTag:    &vlanTag,
-		srcMAC:     &srcMAC,
+		vlanTag:    &vlanIdentifierTest,
+		srcMAC:     &srcMACTest,
 		isDNSQuery: true,
 	}
 
