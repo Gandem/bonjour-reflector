@@ -7,9 +7,9 @@ import (
 )
 
 var devices = map[macAddress]bonjourDevice{
-	"00:14:22:01:23:45": bonjourDevice{OriginPool: 45, SharedPools: []uint16{42, 1042, 46}},
-	"00:14:22:01:23:46": bonjourDevice{OriginPool: 46, SharedPools: []uint16{176, 148}},
-	"00:14:22:01:23:47": bonjourDevice{OriginPool: 47, SharedPools: []uint16{1042, 1717, 13}},
+	"00:14:22:01:23:45": {OriginPool: 45, SharedPools: []uint16{42, 1042, 46}},
+	"00:14:22:01:23:46": {OriginPool: 46, SharedPools: []uint16{176, 148}},
+	"00:14:22:01:23:47": {OriginPool: 47, SharedPools: []uint16{1042, 1717, 13}},
 }
 
 func TestMapByPool(t *testing.T) {
