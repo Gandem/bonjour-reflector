@@ -12,7 +12,7 @@ before_script:
   - go get github.com/fzipp/gocyclo
 
 script:
-  - test -z $(gofmt -s -l $GO_FILES)         # Fail if a .go file hasn't been formatted with gofmt
+  - test -z $(gofmt -l $GO_FILES)            # Fail if a .go file hasn't been formatted with gofmt
   - go test -v -race ./...                   # Run all the tests with the race detector enabled
   - go vet ./...                             # go vet is the official Go static analyzer
   - megacheck ./...                          # "go vet on steroids" + linter
