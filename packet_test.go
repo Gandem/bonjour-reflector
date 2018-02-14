@@ -70,7 +70,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 
 	if isDNSQuery {
 		dnsLayer = &layers.DNS{
-			Questions: []layers.DNSQuestion{{
+			Questions: []layers.DNSQuestion{layers.DNSQuestion{
 				Name:  []byte("example.com"),
 				Type:  layers.DNSTypeA,
 				Class: layers.DNSClassIN,
@@ -79,7 +79,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 		}
 	} else {
 		dnsLayer = &layers.DNS{
-			Answers: []layers.DNSResourceRecord{{
+			Answers: []layers.DNSResourceRecord{layers.DNSResourceRecord{
 				Name:  []byte("example.com"),
 				Type:  layers.DNSTypeA,
 				Class: layers.DNSClassIN,
