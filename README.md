@@ -1,5 +1,13 @@
 # bonjour-reflector
 
+## About this project
+
+This projects aims to make bonjour devices (such as printers, chromecasts, ...) discoverable and usable by other devices located in different VLANs.
+
+This is done by intercepting mDNS packets and forwarding them to the correct VLANs (for the request packets, the VLANs where the bonjour devices are located; for the response packets, the VLANs where the searching devices are located).
+
+The packet forwarding is limited to devices on VLANs whose access to a given bonjour device has been allowed. A configuration file lists all shared devices with the VLANs each of them are shared with.
+
 ## Installation
 
 You need [dep](https://github.com/golang/dep) to install the project dependencies.
