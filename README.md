@@ -42,3 +42,25 @@ And run
 (you may need to run this line with administrator privileges to listen to your interface).
 
 You may use any configuration file you want (following the same structure as the template `./config.toml` file provided) by specifying its path with the `-config` option.
+
+## Contribution
+
+Help on this project is very welcomed. Before submitting your contribution, please make sure to take a moment and read through the following guidelines:
+
+- The `master` branch contains the latest stable version of the project. All development should be done in dedicated branches.
+- Try to name your branch in a clear way, for example by following this pattern: `username/what-i-am-fixing`.
+- Do not check in any compiled binaries in the commits.
+- It's okay to have multiple small commits as you work on the PR - we will squash them before merging.
+- Make sure all test cases pass (using `go test`).
+- When fixing a bug:
+    - Prefix your PR with `Fix:`, and add references to the issues linked to your PR (if they exist),
+    - Add test coverage if applicable.
+- When adding a new feature:
+    - Prefix your PR with `Feature:`,
+    - Add a description of your feature and reasons to add this feature,
+    - Add test cases for this feature.
+
+
+## License
+
+MIT
