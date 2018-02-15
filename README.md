@@ -33,4 +33,12 @@ Then build the package:
 go build
 ```
 
-And run `./bonjour-reflector` (you may need to run it with administrator privileges to listen to your interface).
+And run
+
+```
+./bonjour-reflector -config=./config.toml
+```
+
+(you may need to run this line with administrator privileges to listen to your interface).
+
+You may use any configuration file you want (following the same structure as the template `./config.toml` file provided) by specifying its path with the `-config` option.
