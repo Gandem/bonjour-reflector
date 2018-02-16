@@ -36,7 +36,7 @@ func TestReadConfig(t *testing.T) {
 	}
 	if !os.IsNotExist(err2) {
 		// if the error returned is not of type "file not found"
-		t.Error("Error: wrong error returned for nonexistant config file")
+		t.Error("Error in readConfig(): wrong error returned for nonexistant config file")
 	}
 }
 
