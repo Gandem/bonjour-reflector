@@ -2,20 +2,24 @@
 
 ## About this project
 
-This project aims to make Bonjour devices (such as printers and chromecasts) discoverable and usable by other devices located in different VLANs.
-This is similar to [avahi-reflector](http://www.avahi.org/), but in addition permits a fine-grained control of how Bonjour traffic is reflected between VLANs.
+Bonjour-reflector makes Bonjour devices such as printers, Chromecasts or Spotify Connect speakers, discoverable and usable by other devices located on different VLANs.
 
-How this is done:
-- A device searching for Bonjour devices sends mDNS packets.
-- The bonjour-reflector intercepts these mDNS packets.
-- bonjour-reflector gets the destination MAC address and changes the VLAN tag of the packet to the tag of the VLAN the corresponding Bonjour device is in.
-- bonjour-reflector then sends the modified packet back on the network.
-- The Bonjour device recieves the packet and sends a response which is also intercepted by bonjour-reflector.
-- bonjour-reflector checks which VLANs are shared with the Bonjour device (identified by the source MAC address of the packet), and sends a packet to each of these VLANs.
+Compared to other tools such as [avahi-reflector](http://www.avahi.org/), Bonjour-reflector allows a more fine-grained control of how Bonjour traffic is reflected across VLANs. 
 
-For this to work, bonjour-reflector should have an interface with all the concerned VLANs on tagged.
+## How it works
 
-The packet forwarding is limited to devices on VLANs whose access to a given bonjour device has been allowed. A configuration file lists, for each Bonjour device, which VLANs have access to it.
+Bonjour-reflector works by intercepting all mDNS traffic and rewriting layers 2 and 3 of the packets to reflect them across the appropriate VLANs.
+
+A configuration file lists, for each Bonjour device (defined by its MAC address), which VLANs should have access to this device. mDNS packets will only be forwarded if the configuration file says so.
+
+The interface on which Bonjour-reflector runs should be configured so that it receives each VLAN's traffic, tagged.
+
+In detail, here is what happens when Bonjour-reflector runs:
+- a device searching for Bonjour devices sends mDNS packets on his VLAN.
+- bonjour-reflector receives these mDNS packets, tagged with the original VLAN.
+- bonjour-reflector looks up in its configuration to which VLANs it should forward the mDNS request, and send new packets tagged with these new VLANs.
+- one Bonjour device receives the packet and sends a response which is also intercepted by bonjour-reflector.
+- bonjour-reflector reads the source MAC of the mDNS response, looks up in its configuration which VLANs are shared with this Bonjour device, and reflects the mDNS response on each of these VLANs.
 
 ## Installation
 
