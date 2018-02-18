@@ -3,12 +3,15 @@ package main
 import (
 	"io"
 	"net"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
+	"github.com/google/gopacket/pcapgo"
 )
 
 var (
@@ -251,5 +254,39 @@ func TestFilterBonjourPacketsLazily(t *testing.T) {
 	computedResult := <-packetChan
 	if !areBonjourPacketsEqual(expectedResult, computedResult) {
 		t.Error("Error in filterBonjourPacketsLazily()")
+	}
+}
+
+func TestSendBonjourPacket(t *testing.T) {
+	// Create a PCAP file to mock a handle
+	tempFilePath := "/tmp/file.pcap"
+	f, _ := os.Create(tempFilePath)
+	w := pcapgo.NewWriter(f)
+	w.WriteFileHeader(65536, layers.LinkTypeEthernet) // new file, must do this.
+
+	// Craft a test packet in the PCAP file
+	initialData := createMockmDNSPacket(true, true)
+	decoder := gopacket.DecodersByLayerName["Ethernet"]
+	initialPacket := gopacket.NewPacket(initialData, decoder, gopacket.DecodeOptions{Lazy: true})
+	bonjourTestPacket := bonjourPacket{
+		packet:     initialPacket,
+		vlanTag:    &vlanIdentifierTest,
+		srcMAC:     &srcMACTest,
+		dstMAC:     &dstMACTest,
+		isDNSQuery: true,
+	}
+
+	// Open the PCAP file and create a handle
+	if handle, err := pcap.OpenOffline(tempFilePath); err != nil {
+		panic(err)
+	} else {
+		sendBonjourPacket(handle, &bonjourTestPacket, uint16(29), brMACTest)
+		// Check that a packet was written on the handle, with the correct vlanTag and srcMAC
+		r, _ := pcapgo.NewReader(f)
+		computedData, _, _ := r.ReadPacketData()
+		computedPacket := gopacket.NewPacket(computedData, decoder, gopacket.DecodeOptions{Lazy: true})
+		if !reflect.DeepEqual(initialPacket.Layers(), computedPacket.Layers()) {
+			t.Error("Error in sendBonjourPacket()")
+		}
 	}
 }
