@@ -2,11 +2,20 @@
 
 ## About this project
 
-This projects aims to make bonjour devices (such as printers, chromecasts, ...) discoverable and usable by other devices located in different VLANs.
+This project aims to make Bonjour devices (such as printers and chromecasts) discoverable and usable by other devices located in different VLANs.
+This is similar to [avahi-reflector](http://www.avahi.org/), but in addition permits a fine-grained control of how Bonjour traffic is reflected between VLANs.
 
-This is done by intercepting mDNS packets and forwarding them to the correct VLANs (for the request packets, the VLANs where the bonjour devices are located; for the response packets, the VLANs where the searching devices are located).
+How this is done:
+- A device searching for Bonjour devices sends mDNS packets.
+- The bonjour-reflector intercepts these mDNS packets.
+- bonjour-reflector gets the destination MAC address and changes the VLAN tag of the packet to the tag of the VLAN the corresponding Bonjour device is in.
+- bonjour-reflector then sends the modified packet back on the network.
+- The Bonjour device recieves the packet and sends a response which is also intercepted by bonjour-reflector.
+- bonjour-reflector checks which VLANs are shared with the Bonjour device (identified by the source MAC address of the packet), and sends a packet to each of these VLANs.
 
-The packet forwarding is limited to devices on VLANs whose access to a given bonjour device has been allowed. A configuration file lists all shared devices with the VLANs each of them are shared with.
+For this to work, bonjour-reflector should have an interface with all the concerned VLANs on tagged.
+
+The packet forwarding is limited to devices on VLANs whose access to a given bonjour device has been allowed. A configuration file lists, for each Bonjour device, which VLANs have access to it.
 
 ## Installation
 
