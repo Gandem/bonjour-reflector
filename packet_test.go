@@ -272,39 +272,33 @@ func TestFilterBonjourPacketsLazily(t *testing.T) {
 	}
 }
 
-// func TestSendBonjourPacket(t *testing.T) {
-// 	// Create a PCAP file to mock a handle
-// 	tempFilePath := "/tmp/file.pcap"
-// 	f, _ := os.Create(tempFilePath)
-// 	w := pcapgo.NewWriter(f)
-// 	w.WriteFileHeader(65536, layers.LinkTypeEthernet) // new file, must do this.
+type mockPacketWriter struct {
+	packet gopacket.Packet
+}
 
-// 	// Craft a test packet in the PCAP file
-// 	initialData := createMockmDNSPacket(true, true)
-// 	decoder := gopacket.DecodersByLayerName["Ethernet"]
-// 	initialPacket := gopacket.NewPacket(initialData, decoder, gopacket.DecodeOptions{Lazy: true})
-// 	bonjourTestPacket := bonjourPacket{
-// 		packet:     initialPacket,
-// 		vlanTag:    &vlanIdentifierTest,
-// 		srcMAC:     &srcMACTest,
-// 		dstMAC:     &dstMACTest,
-// 		isDNSQuery: true,
-// 	}
+func (pw *mockPacketWriter) WritePacketData(bytes []byte) (err error) {
+	decoder := gopacket.DecodersByLayerName["Ethernet"]
+	pw.packet = gopacket.NewPacket(bytes, decoder, gopacket.DecodeOptions{Lazy: true})
+	return
+}
 
-// 	// Open the PCAP file and create a handle
-// 	if handle, err := pcap.OpenOffline(tempFilePath); err != nil {
-// 		panic(err)
-// 	} else {
-// 		bytesToWrite := sendBonjourPacket(&bonjourTestPacket, uint16(29), brMACTest)
-// 		// Check that a packet was written on the handle, with the correct vlanTag and srcMAC
-// 		if r, rErr := pcapgo.NewReader(f); rErr != nil {
-// 			panic(rErr)
-// 		} else {
-// 			computedData, _, _ := r.ReadPacketData()
-// 			computedPacket := gopacket.NewPacket(computedData, decoder, gopacket.DecodeOptions{Lazy: true})
-// 			if !reflect.DeepEqual(initialPacket.Layers(), computedPacket.Layers()) {
-// 				t.Error("Error in sendBonjourPacket()")
-// 			}
-// 		}
-// 	}
-// }
+func TestSendBonjourPacket(t *testing.T) {
+	// Craft a test packet
+	initialData := createMockmDNSPacket(true, true)
+	decoder := gopacket.DecodersByLayerName["Ethernet"]
+	initialPacket := gopacket.NewPacket(initialData, decoder, gopacket.DecodeOptions{Lazy: true})
+	bonjourTestPacket := bonjourPacket{
+		packet:     initialPacket,
+		vlanTag:    &vlanIdentifierTest,
+		srcMAC:     &srcMACTest,
+		dstMAC:     &dstMACTest,
+		isDNSQuery: true,
+	}
+
+	pw := &mockPacketWriter{packet: nil}
+
+	sendBonjourPacket(pw, &bonjourTestPacket, uint16(29), brMACTest)
+	if !reflect.DeepEqual(initialPacket.Layers(), pw.packet.Layers()) {
+		t.Error("Error in sendBonjourPacket()")
+	}
+}
