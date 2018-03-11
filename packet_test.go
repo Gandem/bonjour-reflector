@@ -3,15 +3,12 @@ package main
 import (
 	"io"
 	"net"
-	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
-	"github.com/google/gopacket/pcapgo"
 )
 
 var (
@@ -21,17 +18,27 @@ var (
 	vlanIdentifierTest = uint16(30)
 	srcIPv4Test        = net.IP{127, 0, 0, 1}
 	dstIPv4Test        = net.IP{224, 0, 0, 251}
+	dstIPv4ToIgnore    = net.IP{224, 0, 0, 252}
 	srcIPv6Test        = net.ParseIP("::1")
 	dstIPv6Test        = net.ParseIP("ff02::fb")
+	dstIPv6ToIgnore    = net.ParseIP("ff02::fc")
 	srcUDPPortTest     = layers.UDPPort(5353)
 	dstUDPPortTest     = layers.UDPPort(5353)
+	dstUDPPortToIgnore = layers.UDPPort(5352)
 )
 
 func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
+	if isIPv4 {
+		return createRawPacket(isIPv4, isDNSQuery, dstIPv4Test, srcMACTest, dstUDPPortTest)
+	}
+	return createRawPacket(isIPv4, isDNSQuery, dstIPv6Test, srcMACTest, dstUDPPortTest)
+}
+
+func createRawPacket(isIPv4 bool, isDNSQuery bool, dstIP net.IP, srcMAC net.HardwareAddr, dstPort layers.UDPPort) []byte {
 	var ethernetLayer, dot1QLayer, ipLayer, udpLayer, dnsLayer gopacket.SerializableLayer
 
 	ethernetLayer = &layers.Ethernet{
-		SrcMAC:       srcMACTest,
+		SrcMAC:       srcMAC,
 		DstMAC:       dstMACTest,
 		EthernetType: layers.EthernetTypeDot1Q,
 	}
@@ -44,7 +51,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 
 		ipLayer = &layers.IPv4{
 			SrcIP:    srcIPv4Test,
-			DstIP:    dstIPv4Test,
+			DstIP:    dstIP,
 			Version:  4,
 			Protocol: layers.IPProtocolUDP,
 			Length:   146,
@@ -59,7 +66,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 
 		ipLayer = &layers.IPv6{
 			SrcIP:      srcIPv6Test,
-			DstIP:      dstIPv6Test,
+			DstIP:      dstIP,
 			Version:    6,
 			Length:     48,
 			NextHeader: layers.IPProtocolUDP,
@@ -68,7 +75,7 @@ func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 
 	udpLayer = &layers.UDP{
 		SrcPort: srcUDPPortTest,
-		DstPort: dstUDPPortTest,
+		DstPort: dstPort,
 	}
 
 	if isDNSQuery {
@@ -197,37 +204,45 @@ func TestParseDNSPayload(t *testing.T) {
 }
 
 type dataSource struct {
-	packetSent bool
-	data       []byte
+	sentPackets int
+	data        [][]byte
 }
 
 func (dataSource *dataSource) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err error) {
-	// Return one packet.
-	// If a packet has already been returned in the past, return an EOF error
+	// Return one packet for each call.
+	// If all the expected packets have already been returned in the past, return an EOF error
 	// to end the reading of packets from this source.
-	data = dataSource.data
+	if dataSource.sentPackets >= len(dataSource.data) {
+		return nil, ci, io.EOF
+	}
+	data = dataSource.data[dataSource.sentPackets]
 	ci = gopacket.CaptureInfo{
 		Timestamp:      time.Time{},
 		CaptureLength:  len(data),
 		Length:         ci.CaptureLength,
 		InterfaceIndex: 0,
 	}
-	if !dataSource.packetSent {
-		dataSource.packetSent = true
-		return data, ci, nil
-	}
-	return nil, ci, io.EOF
+	dataSource.sentPackets++
+	return data, ci, nil
 }
 
 func createMockPacketSource() (packetSource *gopacket.PacketSource, packet gopacket.Packet) {
-	data := createMockmDNSPacket(true, true)
+	// First, send packets that should be filtered
+	// Then, send one legitimate packet
+	// Return the packetSource and the legitimate packet
+	data := [][]byte{
+		createRawPacket(true, true, dstIPv4ToIgnore, srcMACTest, dstUDPPortTest),
+		createRawPacket(false, true, dstIPv6ToIgnore, srcMACTest, dstUDPPortTest),
+		createRawPacket(true, true, dstIPv4Test, brMACTest, dstUDPPortTest),
+		createRawPacket(true, true, dstIPv4Test, srcMACTest, dstUDPPortToIgnore),
+		createMockmDNSPacket(true, true)}
 	dataSource := &dataSource{
-		packetSent: false,
-		data:       data,
+		sentPackets: 0,
+		data:        data,
 	}
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
 	packetSource = gopacket.NewPacketSource(dataSource, decoder)
-	packet = gopacket.NewPacket(data, decoder, gopacket.DecodeOptions{Lazy: true})
+	packet = gopacket.NewPacket(data[len(data)-1], decoder, gopacket.DecodeOptions{Lazy: true})
 	return
 }
 
