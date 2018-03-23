@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/google/gopacket"
@@ -14,7 +16,14 @@ import (
 func main() {
 	// Read config file and generate mDNS forwarding maps
 	configPath := flag.String("config", "", "Config file in TOML format")
+	debug := flag.Bool("debug", false, "Enable pprof server on /debug/pprof/")
 	flag.Parse()
+
+	// Start debug server
+	if *debug {
+		go http.ListenAndServe(fmt.Sprintf("localhost:%d", 6060), nil)
+	}
+
 	cfg, err := readConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Could not read configuration: %v", err)
