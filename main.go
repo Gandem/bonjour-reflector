@@ -21,7 +21,7 @@ func main() {
 
 	// Start debug server
 	if *debug {
-		go http.ListenAndServe(fmt.Sprintf("localhost:%d", 6060), nil)
+		go debugServer(6060)
 	}
 
 	cfg, err := readConfig(*configPath)
@@ -67,5 +67,12 @@ func main() {
 				}
 			}
 		}
+	}
+}
+
+func debugServer(port int) {
+	err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), nil)
+	if err != nil {
+		log.Fatalf("The application was started with -debug flag but could not listen on port %v: \n %s", port, err)
 	}
 }
