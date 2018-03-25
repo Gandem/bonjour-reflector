@@ -73,6 +73,11 @@ Help on this project is very welcomed. Before submitting your contribution, plea
     - Add a description of your feature and reasons to add this feature,
     - Add test cases for this feature.
 
+# Debugging & Profiling
+
+A pprof server will listen on port `6060` if the you use the `-debug` flag.
+
+More information on pprof is available [here](https://golang.org/pkg/net/http/pprof/)
 
 ## License
 
