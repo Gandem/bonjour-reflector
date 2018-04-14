@@ -36,17 +36,19 @@ func main() {
 		log.Fatalf("Could not find network interface: %v", cfg.NetInterface)
 	}
 
-	// Filter tagged bonjour traffic
-	err = rawTraffic.SetBPFFilter("vlan and udp dst port 5353")
-	if err != nil {
-		log.Fatalf("Could not apply filter on network interface")
-	}
 	// Get the local MAC address, to filter out Bonjour packet generated locally
 	intf, err := net.InterfaceByName(cfg.NetInterface)
 	if err != nil {
 		log.Fatal(err)
 	}
 	brMACAddress := intf.HardwareAddr
+
+	// Filter tagged bonjour traffic
+	filterTemplate := "not (ether src %s) and vlan and dst net (224.0.0.251 or ff02::fb) and udp dst port 5353"
+	err = rawTraffic.SetBPFFilter(fmt.Sprintf(filterTemplate, brMACAddress))
+	if err != nil {
+		log.Fatalf("Could not apply filter on network interface: %v", err)
+	}
 
 	// Get a channel of Bonjour packets to process
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
