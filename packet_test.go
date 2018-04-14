@@ -29,23 +29,23 @@ var (
 
 func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
 	if isIPv4 {
-		return createRawPacket(isIPv4, isDNSQuery, dstIPv4Test, srcMACTest, dstUDPPortTest)
+		return createRawPacket(isIPv4, isDNSQuery, vlanIdentifierTest, dstIPv4Test, srcMACTest, dstMACTest, dstUDPPortTest)
 	}
-	return createRawPacket(isIPv4, isDNSQuery, dstIPv6Test, srcMACTest, dstUDPPortTest)
+	return createRawPacket(isIPv4, isDNSQuery, vlanIdentifierTest, dstIPv6Test, srcMACTest, dstMACTest, dstUDPPortTest)
 }
 
-func createRawPacket(isIPv4 bool, isDNSQuery bool, dstIP net.IP, srcMAC net.HardwareAddr, dstPort layers.UDPPort) []byte {
+func createRawPacket(isIPv4 bool, isDNSQuery bool, vlanTag uint16, dstIP net.IP, srcMAC net.HardwareAddr, dstMAC net.HardwareAddr, dstPort layers.UDPPort) []byte {
 	var ethernetLayer, dot1QLayer, ipLayer, udpLayer, dnsLayer gopacket.SerializableLayer
 
 	ethernetLayer = &layers.Ethernet{
 		SrcMAC:       srcMAC,
-		DstMAC:       dstMACTest,
+		DstMAC:       dstMAC,
 		EthernetType: layers.EthernetTypeDot1Q,
 	}
 
 	if isIPv4 {
 		dot1QLayer = &layers.Dot1Q{
-			VLANIdentifier: vlanIdentifierTest,
+			VLANIdentifier: vlanTag,
 			Type:           layers.EthernetTypeIPv4,
 		}
 
@@ -60,7 +60,7 @@ func createRawPacket(isIPv4 bool, isDNSQuery bool, dstIP net.IP, srcMAC net.Hard
 		}
 	} else {
 		dot1QLayer = &layers.Dot1Q{
-			VLANIdentifier: vlanIdentifierTest,
+			VLANIdentifier: vlanTag,
 			Type:           layers.EthernetTypeIPv6,
 		}
 
@@ -231,10 +231,10 @@ func createMockPacketSource() (packetSource *gopacket.PacketSource, packet gopac
 	// Then, send one legitimate packet
 	// Return the packetSource and the legitimate packet
 	data := [][]byte{
-		createRawPacket(true, true, dstIPv4ToIgnore, srcMACTest, dstUDPPortTest),
-		createRawPacket(false, true, dstIPv6ToIgnore, srcMACTest, dstUDPPortTest),
-		createRawPacket(true, true, dstIPv4Test, brMACTest, dstUDPPortTest),
-		createRawPacket(true, true, dstIPv4Test, srcMACTest, dstUDPPortToIgnore),
+		createRawPacket(true, true, vlanIdentifierTest, dstIPv4ToIgnore, srcMACTest, dstMACTest, dstUDPPortTest),
+		createRawPacket(false, true, vlanIdentifierTest, dstIPv6ToIgnore, srcMACTest, dstMACTest, dstUDPPortTest),
+		createRawPacket(true, true, vlanIdentifierTest, dstIPv4Test, brMACTest, dstMACTest, dstUDPPortTest),
+		createRawPacket(true, true, vlanIdentifierTest, dstIPv4Test, srcMACTest, dstMACTest, dstUDPPortToIgnore),
 		createMockmDNSPacket(true, true)}
 	dataSource := &dataSource{
 		sentPackets: 0,
@@ -284,21 +284,51 @@ func (pw *mockPacketWriter) WritePacketData(bytes []byte) (err error) {
 
 func TestSendBonjourPacket(t *testing.T) {
 	// Craft a test packet
-	initialData := createMockmDNSPacket(true, true)
+	initialDataIPv4 := createMockmDNSPacket(true, true)
+	initialDataIPv6 := createMockmDNSPacket(false, true)
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
-	initialPacket := gopacket.NewPacket(initialData, decoder, gopacket.DecodeOptions{Lazy: true})
-	bonjourTestPacket := bonjourPacket{
-		packet:     initialPacket,
-		vlanTag:    &vlanIdentifierTest,
-		srcMAC:     &srcMACTest,
-		dstMAC:     &dstMACTest,
+	initialPacketIPv4 := gopacket.NewPacket(initialDataIPv4, decoder, gopacket.DecodeOptions{Lazy: true})
+	initialPacketIPv6 := gopacket.NewPacket(initialDataIPv6, decoder, gopacket.DecodeOptions{Lazy: true})
+
+	srcMACv4, dstMACv4 := parseEthernetLayer(initialPacketIPv4)
+	bonjourTestPacketIPv4 := bonjourPacket{
+		packet:     initialPacketIPv4,
+		vlanTag:    parseVLANTag(initialPacketIPv4),
+		srcMAC:     srcMACv4,
+		dstMAC:     dstMACv4,
 		isDNSQuery: true,
+		isIPv6:     false,
 	}
+
+	srcMACv6, dstMACv6 := parseEthernetLayer(initialPacketIPv6)
+	bonjourTestPacketIPv6 := bonjourPacket{
+		packet:     initialPacketIPv6,
+		vlanTag:    parseVLANTag(initialPacketIPv6),
+		srcMAC:     srcMACv6,
+		dstMAC:     dstMACv6,
+		isDNSQuery: true,
+		isIPv6:     true,
+	}
+
+	newVlanTag := uint16(29)
+
+	expectedDstMACv4 := net.HardwareAddr{0x01, 0x00, 0x5E, 0x00, 0x00, 0xFB}
+	expectedDataIPv4 := createRawPacket(true, true, newVlanTag, dstIPv4Test, brMACTest, expectedDstMACv4, dstUDPPortTest)
+	expectedPacketIPv4 := gopacket.NewPacket(expectedDataIPv4, decoder, gopacket.DecodeOptions{Lazy: true})
+
+	expectedDstMACv6 := net.HardwareAddr{0x33, 0x33, 0x00, 0x00, 0x00, 0xFB}
+	expectedDataIPv6 := createRawPacket(false, true, newVlanTag, dstIPv6Test, brMACTest, expectedDstMACv6, dstUDPPortTest)
+	expectedPacketIPv6 := gopacket.NewPacket(expectedDataIPv6, decoder, gopacket.DecodeOptions{Lazy: true})
 
 	pw := &mockPacketWriter{packet: nil}
 
-	sendBonjourPacket(pw, &bonjourTestPacket, uint16(29), brMACTest)
-	if !reflect.DeepEqual(initialPacket.Layers(), pw.packet.Layers()) {
-		t.Error("Error in sendBonjourPacket()")
+	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest)
+	if !reflect.DeepEqual(expectedPacketIPv4.Layers(), pw.packet.Layers()) {
+		t.Error("Error in sendBonjourPacket() for IPv4")
+	}
+
+	sendBonjourPacket(pw, &bonjourTestPacketIPv6, newVlanTag, brMACTest)
+	if !reflect.DeepEqual(expectedPacketIPv6.Layers(), pw.packet.Layers()) {
+		t.Error("Error in sendBonjourPacket() for IPv6")
 	}
 }
