@@ -2,10 +2,10 @@ net_interface = "wls1" # Put here the network interface you want to use.
 
 [devices]
 
-    [devices."AA:BB:CC:DD:EE:FF"]
+    [devices."AA:BB:CC:DD:EE:FF"]    # A shared bonjour device
     description = "Test Chromecast"
-    origin_pool = 1078
-    shared_pools = [1234, 3597]
+    origin_pool = 1078               # Tag of the VLAN the device is in
+    shared_pools = [1234, 3597]      # Tags of the VLANs which can use this device
 
     [devices."AA:00:CC:00:EE:00"]
     description = "Test Spotify Air"
