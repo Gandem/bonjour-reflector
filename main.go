@@ -58,9 +58,7 @@ func main() {
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
 		fmt.Println(bonjourPacket.packet.String())
-		if bonjourPacket.vlanTag == nil {
-			continue
-		}
+
 		// Forward the mDNS query or response to appropriate VLANs
 		if bonjourPacket.isDNSQuery {
 			tags, ok := poolsMap[*bonjourPacket.vlanTag]
