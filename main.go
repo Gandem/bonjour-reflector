@@ -51,20 +51,25 @@ func main() {
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
 		fmt.Println(bonjourPacket.packet.String())
-		if bonjourPacket.vlanTag != nil {
-			// Forward the mDNS query or response to appropriate VLANs
-			if bonjourPacket.isDNSQuery {
-				if tags, ok := poolsMap[*bonjourPacket.vlanTag]; ok {
-					for _, tag := range tags {
-						sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
-					}
-				}
-			} else {
-				if device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]; ok {
-					for _, tag := range device.SharedPools {
-						sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
-					}
-				}
+		if bonjourPacket.vlanTag == nil {
+			continue
+		}
+		// Forward the mDNS query or response to appropriate VLANs
+		if bonjourPacket.isDNSQuery {
+			tags, ok := poolsMap[*bonjourPacket.vlanTag]
+			if !ok {
+				continue
+			}
+			for _, tag := range tags {
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
+			}
+		} else {
+			device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]
+			if !ok {
+				continue
+			}
+			for _, tag := range device.SharedPools {
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
 			}
 		}
 	}
