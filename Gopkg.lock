@@ -12,8 +12,7 @@
   packages = [
     ".",
     "layers",
-    "pcap",
-    "pcapgo"
+    "pcap"
   ]
   revision = "11c65f1ca9081dfea43b4f9643f5c155583b73ba"
   version = "v1.1.14"
@@ -21,6 +20,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "19485ea88419adee25e029fbfaa52e1770c56196dd5d3800f6d367b4f1c742d6"
+  inputs-digest = "8bad68e74ac4305beb3b5270dcda9c97b5f6a315779c17c60672fcd7883a0e21"
   solver-name = "gps-cdcl"
   solver-version = 1
