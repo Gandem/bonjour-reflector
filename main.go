@@ -36,6 +36,11 @@ func main() {
 		log.Fatalf("Could not find network interface: %v", cfg.NetInterface)
 	}
 
+	// Filter tagged bonjour traffic
+	err = rawTraffic.SetBPFFilter("vlan and udp dst port 5353")
+	if err != nil {
+		log.Fatalf("Could not apply filter on network interface")
+	}
 	// Get the local MAC address, to filter out Bonjour packet generated locally
 	intf, err := net.InterfaceByName(cfg.NetInterface)
 	if err != nil {
