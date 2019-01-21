@@ -1,0 +1,19 @@
+# This is a test config file used by config_test.go
+net_interface = "test0"
+
+[devices]
+
+    [devices."00:14:22:01:23:45"]
+    description = "Test Chromecast"
+    origin_pool = 45
+    shared_pools = [42, 1042, 46]
+
+    [devices."00:14:22:01:23:46"]
+    description = "Test Spotify Air"
+    origin_pool = 46
+    shared_pools = [176, 148]
+
+    [devices."00:14:22:01:23:47"]
+    description = "Test Spotify Air"
+    origin_pool = 47
+    shared_pools = [1042, 1717, 13]
