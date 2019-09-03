@@ -2,23 +2,32 @@
 
 
 [[projects]]
+  digest = "1:b16fbfbcc20645cb419f78325bb2e85ec729b338e996a228124d68931a6f2a37"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
+  pruneopts = "UT"
   revision = "b26d9c308763d68093482582cea63d69be07a0f0"
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:aa2befda6c130a48c32ef6370edd9fe5be530d0a0f6624e99a936dbaaffa7f65"
   name = "github.com/google/gopacket"
   packages = [
     ".",
     "layers",
-    "pcap"
+    "pcap",
   ]
-  revision = "157f9f84344746b9ed8ca4e92db2419ad94d4fc6"
+  pruneopts = "UT"
+  revision = "c340012d34adb8462b1e23ad4d7a73944f4224b8"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f9a7498f3b2c37e281db03ec64056d0ce93bbc68be03e70529631ab9ed876a4e"
+  input-imports = [
+    "github.com/BurntSushi/toml",
+    "github.com/google/gopacket",
+    "github.com/google/gopacket/layers",
+    "github.com/google/gopacket/pcap",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

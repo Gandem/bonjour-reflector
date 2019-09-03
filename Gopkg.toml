@@ -35,4 +35,4 @@
 
 [[constraint]]
   name = "github.com/google/gopacket"
-  revision = "157f9f84344746b9ed8ca4e92db2419ad94d4fc6"
+  revision = "c340012d34adb8462b1e23ad4d7a73944f4224b8"
