@@ -43,17 +43,22 @@ func main() {
 	}
 	brMACAddress := intf.HardwareAddr
 
+	// Filter tagged bonjour traffic
+	filterTemplate := "not (ether src %s) and vlan and dst net (224.0.0.251 or ff02::fb) and udp dst port 5353"
+	err = rawTraffic.SetBPFFilter(fmt.Sprintf(filterTemplate, brMACAddress))
+	if err != nil {
+		log.Fatalf("Could not apply filter on network interface: %v", err)
+	}
+
 	// Get a channel of Bonjour packets to process
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
 	source := gopacket.NewPacketSource(rawTraffic, decoder)
-	bonjourPackets := filterBonjourPacketsLazily(source, brMACAddress)
+	bonjourPackets := parsePacketsLazily(source)
 
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
 		fmt.Println(bonjourPacket.packet.String())
-		if bonjourPacket.vlanTag == nil {
-			continue
-		}
+
 		// Forward the mDNS query or response to appropriate VLANs
 		if bonjourPacket.isDNSQuery {
 			tags, ok := poolsMap[*bonjourPacket.vlanTag]
