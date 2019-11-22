@@ -53,7 +53,7 @@ func main() {
 	// Get a channel of Bonjour packets to process
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
 	source := gopacket.NewPacketSource(rawTraffic, decoder)
-	bonjourPackets := filterBonjourPacketsLazily(source, brMACAddress)
+	bonjourPackets := parsePacketsLazily(source)
 
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
