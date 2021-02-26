@@ -23,30 +23,22 @@ In detail, here is what happens when Bonjour-reflector runs:
 
 ## Installation
 
-You need [dep](https://github.com/golang/dep) to install the project dependencies.
-Once you've installed dep, run:
+A Golang version more recent than Go 1.16 is recommended to build bonjour-reflector. Checkout https://golang.org/doc/install for instructions on how to install a recent version of Golang.
 
-```
-dep ensure
-```
-
-to install the dependencies.
-
-One of the dependencies of the project (gopacket/pcap) also needs the libpcap header files to work properly.
-On Linux-based distributions, you can do this by installing the development version of libpcap.
-
-
-## App setup
-
-First, indicate in the `config.toml` file which of your network interfaces you want to listen to.
-
-Then build the package:
+To build the binary, run:
 
 ```
 go build
 ```
 
-And run
+One of the dependencies of the project (gopacket/pcap) also needs the libpcap header files to work properly.
+On Linux-based distributions, you can do this by installing the development version of libpcap (package: libpcap-dev).
+
+## App setup
+
+First, indicate in the `config.toml` file which of your network interfaces you want to listen to.
+
+Then run
 
 ```
 ./bonjour-reflector -config=./config.toml
