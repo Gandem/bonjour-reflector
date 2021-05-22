@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
+	"golang.org/x/sys/unix"
 )
 
 func main() {
@@ -49,6 +50,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not apply filter on network interface: %v", err)
 	}
+
+	// Drop privileges
+	unix.Pledge("stdio", "")
 
 	// Get a channel of Bonjour packets to process
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
