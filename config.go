@@ -3,7 +3,7 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml"
 )
 
 type macAddress string
@@ -23,7 +23,7 @@ func readConfig(path string) (cfg brconfig, err error) {
 	if err != nil {
 		return brconfig{}, err
 	}
-	_, err = toml.Decode(string(content), &cfg)
+	err = toml.Unmarshal(content, &cfg)
 	return cfg, err
 }
 
