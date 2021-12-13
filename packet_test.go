@@ -24,6 +24,7 @@ var (
 	dstUDPPortTest      = layers.UDPPort(5353)
 	questionPayloadTest = []byte{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 7, 101, 120, 97,
 		109, 112, 108, 101, 3, 99, 111, 109, 0, 0, 1, 0, 1}
+	spoofAddrTest       = net.IP{192, 168, 1, 1}
 )
 
 func createMockmDNSPacket(isIPv4 bool, isDNSQuery bool) []byte {
@@ -150,16 +151,16 @@ func TestParseIPLayer(t *testing.T) {
 	isIPv4 := true
 	ipv4Packet := gopacket.NewPacket(createMockmDNSPacket(isIPv4, true), decoder, options)
 
-	computedIsIPv6 := parseIPLayer(ipv4Packet)
-	if computedIsIPv6 == true {
+	computedIsIPv6, srcIP := parseIPLayer(ipv4Packet)
+	if computedIsIPv6 == true || srcIP == nil {
 		t.Error("Error in parseIPLayer() for IPv4 addresses")
 	}
 
 	isIPv4 = false
 	ipv6Packet := gopacket.NewPacket(createMockmDNSPacket(isIPv4, true), decoder, options)
 
-	computedIsIPv6 = parseIPLayer(ipv6Packet)
-	if computedIsIPv6 == false {
+	computedIsIPv6, srcIP = parseIPLayer(ipv6Packet)
+	if computedIsIPv6 == false || srcIP == nil {
 		t.Error("Error in parseIPLayer() for IPv6 addresses")
 	}
 }
@@ -284,23 +285,27 @@ func TestSendBonjourPacket(t *testing.T) {
 	initialPacketIPv6 := gopacket.NewPacket(initialDataIPv6, decoder, gopacket.DecodeOptions{Lazy: true})
 
 	srcMACv4, dstMACv4 := parseEthernetLayer(initialPacketIPv4)
+	isIPv6, srcIP := parseIPLayer(initialPacketIPv4)
 	bonjourTestPacketIPv4 := bonjourPacket{
 		packet:     initialPacketIPv4,
 		vlanTag:    parseVLANTag(initialPacketIPv4),
 		srcMAC:     srcMACv4,
 		dstMAC:     dstMACv4,
+		srcIP:     srcIP,
 		isDNSQuery: true,
-		isIPv6:     false,
+		isIPv6:     isIPv6,
 	}
 
 	srcMACv6, dstMACv6 := parseEthernetLayer(initialPacketIPv6)
+	isIPv6, srcIP = parseIPLayer(initialPacketIPv6)
 	bonjourTestPacketIPv6 := bonjourPacket{
 		packet:     initialPacketIPv6,
 		vlanTag:    parseVLANTag(initialPacketIPv6),
 		srcMAC:     srcMACv6,
 		dstMAC:     dstMACv6,
+		srcIP:     srcIP,
 		isDNSQuery: true,
-		isIPv6:     true,
+		isIPv6:     isIPv6,
 	}
 
 	newVlanTag := uint16(29)
@@ -315,12 +320,18 @@ func TestSendBonjourPacket(t *testing.T) {
 
 	pw := &mockPacketWriter{packet: nil}
 
-	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest)
+	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest, spoofAddrTest, false)
 	if !reflect.DeepEqual(expectedPacketIPv4.Layers(), pw.packet.Layers()) {
 		t.Error("Error in sendBonjourPacket() for IPv4")
 	}
+	
+	// When we change the src IP address of mDNS Query we expect the IPv4 layer to be different
+	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest, spoofAddrTest, true)
+	if reflect.DeepEqual(expectedPacketIPv4.Layers(), pw.packet.Layers()) {
+		t.Error("Error in sendBonjourPacket() for IPv4 with spoof address")
+	}
 
-	sendBonjourPacket(pw, &bonjourTestPacketIPv6, newVlanTag, brMACTest)
+	sendBonjourPacket(pw, &bonjourTestPacketIPv6, newVlanTag, brMACTest, spoofAddrTest, false)
 	if !reflect.DeepEqual(expectedPacketIPv6.Layers(), pw.packet.Layers()) {
 		t.Error("Error in sendBonjourPacket() for IPv6")
 	}

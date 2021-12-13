@@ -35,6 +35,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not find network interface: %v", cfg.NetInterface)
 	}
+	
+	// Parse IP use to relay queries to chromecasts
+	spoofAddr := net.ParseIP(cfg.SpoofAddr)
+	if spoofAddr == nil {
+		log.Fatalf("Could not parse cc_subnet_ip")
+	}
 
 	// Get the local MAC address, to filter out Bonjour packet generated locally
 	intf, err := net.InterfaceByName(cfg.NetInterface)
@@ -66,7 +72,7 @@ func main() {
 				continue
 			}
 			for _, tag := range tags {
-				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, true)
 			}
 		} else {
 			device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]
@@ -74,7 +80,7 @@ func main() {
 				continue
 			}
 			for _, tag := range device.SharedPools {
-				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress)
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false)
 			}
 		}
 	}
