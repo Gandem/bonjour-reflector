@@ -20,6 +20,7 @@ func TestReadConfig(t *testing.T) {
 	expectedCfg := brconfig{
 		NetInterface: "test0",
 		Devices:      devices,
+		SpoofAddr:    "192.168.1.1",
 	}
 
 	if err != nil {

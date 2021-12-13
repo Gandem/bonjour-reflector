@@ -1,5 +1,6 @@
 # This is a test config file used by config_test.go
 net_interface = "test0"
+cc_subnet_ip = "192.168.1.1"
 
 [devices]
 

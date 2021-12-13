@@ -12,6 +12,7 @@ type bonjourPacket struct {
 	srcMAC     *net.HardwareAddr
 	dstMAC     *net.HardwareAddr
 	isIPv6     bool
+	srcIP     *net.IP
 	vlanTag    *uint16
 	isDNSQuery bool
 }
@@ -30,10 +31,10 @@ func parsePacketsLazily(source *gopacket.PacketSource) chan bonjourPacket {
 
 			// Get source and destination mac addresses
 			srcMAC, dstMAC := parseEthernetLayer(packet)
-
-			// Check IP protocol version
-			isIPv6 := parseIPLayer(packet)
-
+			
+			// Check IP protocol version and get srcIP
+			isIPv6, srcIP := parseIPLayer(packet)
+			
 			// Get UDP payload
 			payload := parseUDPLayer(packet)
 
@@ -41,11 +42,12 @@ func parsePacketsLazily(source *gopacket.PacketSource) chan bonjourPacket {
 
 			// Pass on the packet for its next adventure
 			packetChan <- bonjourPacket{
-				packet:     packet,
+			packet:     packet,
 				vlanTag:    tag,
 				srcMAC:     srcMAC,
 				dstMAC:     dstMAC,
 				isIPv6:     isIPv6,
+				srcIP:     srcIP,
 				isDNSQuery: isDNSQuery,
 			}
 		}
@@ -69,12 +71,14 @@ func parseVLANTag(packet gopacket.Packet) (tag *uint16) {
 	return
 }
 
-func parseIPLayer(packet gopacket.Packet) (isIPv6 bool) {
+func parseIPLayer(packet gopacket.Packet) (isIPv6 bool, srcIP *net.IP) {
 	if parsedIP := packet.Layer(layers.LayerTypeIPv4); parsedIP != nil {
 		isIPv6 = false
+		srcIP = &parsedIP.(*layers.IPv4).SrcIP
 	}
 	if parsedIP := packet.Layer(layers.LayerTypeIPv6); parsedIP != nil {
 		isIPv6 = true
+		srcIP = &parsedIP.(*layers.IPv6).SrcIP
 	}
 	return
 }
@@ -98,10 +102,10 @@ type packetWriter interface {
 	WritePacketData([]byte) error
 }
 
-func sendBonjourPacket(handle packetWriter, bonjourPacket *bonjourPacket, tag uint16, brMACAddress net.HardwareAddr) {
+func sendBonjourPacket(handle packetWriter, bonjourPacket *bonjourPacket, tag uint16, brMACAddress net.HardwareAddr, spoofAddr net.IP, spoof bool) {
 	*bonjourPacket.vlanTag = tag
 	*bonjourPacket.srcMAC = brMACAddress
-
+	
 	// Network devices may set dstMAC to the local MAC address
 	// Rewrite dstMAC to ensure that it is set to the appropriate multicast MAC address
 	if bonjourPacket.isIPv6 {
@@ -109,8 +113,24 @@ func sendBonjourPacket(handle packetWriter, bonjourPacket *bonjourPacket, tag ui
 	} else {
 		*bonjourPacket.dstMAC = net.HardwareAddr{0x01, 0x00, 0x5E, 0x00, 0x00, 0xFB}
 	}
-
+	
+	
 	buf := gopacket.NewSerializeBuffer()
-	gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, bonjourPacket.packet)
+	serializeOptions := gopacket.SerializeOptions{}
+	
+	// We change the Source IP address of the mDNS query since Chromecasts ignore
+	// packets coming from outside their subnet.
+	if spoof && bonjourPacket.isIPv6 == false {
+		serializeOptions = gopacket.SerializeOptions{ComputeChecksums: true}
+		*bonjourPacket.srcIP = spoofAddr
+		// We recalculate the checksum since the IP was modified
+		if parsedIP := bonjourPacket.packet.Layer(layers.LayerTypeIPv4); parsedIP != nil {
+			if parsedUDP := bonjourPacket.packet.Layer(layers.LayerTypeUDP); parsedUDP != nil {
+				parsedUDP.(*layers.UDP).SetNetworkLayerForChecksum(parsedIP.(*layers.IPv4))
+			}
+		}
+	}
+		
+	gopacket.SerializePacket(buf, serializeOptions, bonjourPacket.packet)
 	handle.WritePacketData(buf.Bytes())
 }
