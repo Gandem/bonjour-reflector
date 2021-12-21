@@ -17,6 +17,7 @@ func main() {
 	// Read config file and generate mDNS forwarding maps
 	configPath := flag.String("config", "", "Config file in TOML format")
 	debug := flag.Bool("debug", false, "Enable pprof server on /debug/pprof/")
+	verbose := flag.Bool("verbose", false, "Show bonjour packets")
 	flag.Parse()
 
 	// Start debug server
@@ -57,7 +58,9 @@ func main() {
 
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
-		fmt.Println(bonjourPacket.packet.String())
+		if *verbose {
+			fmt.Println(bonjourPacket.packet.String())
+		}		
 
 		// Forward the mDNS query or response to appropriate VLANs
 		if bonjourPacket.isDNSQuery {
