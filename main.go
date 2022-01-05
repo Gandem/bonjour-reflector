@@ -79,7 +79,7 @@ func main() {
 			}
 
 			for _, tag := range tags {
-				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, true, *bonjourPacket.dstMAC)
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, true, *bonjourPacket.dstMAC, false)
 			}
 		} else {
 			device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]
@@ -90,10 +90,10 @@ func main() {
 				// if we have a MAC stored for this vlan we also send the response packet directly to it
 				if clientMAC, ok := lastquery[tag]; ok {
 					fmt.Printf("Sending direct packet to MAC %v \n", clientMAC)
-					sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, clientMAC)
+					sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, clientMAC, true)
 				}
 				// we always forward the multicast answer
-				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, *bonjourPacket.dstMAC)
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, *bonjourPacket.dstMAC, false)
 			}
 		}
 	}

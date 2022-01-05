@@ -320,18 +320,18 @@ func TestSendBonjourPacket(t *testing.T) {
 
 	pw := &mockPacketWriter{packet: nil}
 
-	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest, spoofAddrTest, false, dstMACTest)
+	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest, spoofAddrTest, false, dstMACTest, false)
 	if !reflect.DeepEqual(expectedPacketIPv4.Layers(), pw.packet.Layers()) {
 		t.Error("Error in sendBonjourPacket() for IPv4")
 	}
 	
 	// When we change the src IP address of mDNS Query we expect the IPv4 layer to be different
-	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest, spoofAddrTest, true, dstMACTest)
+	sendBonjourPacket(pw, &bonjourTestPacketIPv4, newVlanTag, brMACTest, spoofAddrTest, true, dstMACTest, false)
 	if reflect.DeepEqual(expectedPacketIPv4.Layers(), pw.packet.Layers()) {
 		t.Error("Error in sendBonjourPacket() for IPv4 with spoof address")
 	}
 
-	sendBonjourPacket(pw, &bonjourTestPacketIPv6, newVlanTag, brMACTest, spoofAddrTest, false, dstMACTest)
+	sendBonjourPacket(pw, &bonjourTestPacketIPv6, newVlanTag, brMACTest, spoofAddrTest, false, dstMACTest, false)
 	if !reflect.DeepEqual(expectedPacketIPv6.Layers(), pw.packet.Layers()) {
 		t.Error("Error in sendBonjourPacket() for IPv6")
 	}
