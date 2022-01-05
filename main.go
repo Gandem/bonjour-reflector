@@ -61,18 +61,24 @@ func main() {
 	source := gopacket.NewPacketSource(rawTraffic, decoder)
 	bonjourPackets := parsePacketsLazily(source)
 
+	var lastquery map[int]net.IP //map using var
+
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
-		fmt.Println(bonjourPacket.packet.String())
+		//fmt.Println(bonjourPacket.packet.String())
 
 		// Forward the mDNS query or response to appropriate VLANs
 		if bonjourPacket.isDNSQuery {
+			// We store the MAC of the last client that sent a query so we can send the response directly to it
+			lastquery[*bonjourPacket.vlanTag]=*bonjourPacket.srcMAC
+			fmt.Println("Storing MAC %s for vlan %d", *bonjourPacket.srcMAC, *bonjourPacket.vlanTag)
 			tags, ok := poolsMap[*bonjourPacket.vlanTag]
 			if !ok {
 				continue
 			}
+
 			for _, tag := range tags {
-				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, true)
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, true, *bonjourPacket.dstMAC)
 			}
 		} else {
 			device, ok := cfg.Devices[macAddress(bonjourPacket.srcMAC.String())]
@@ -80,7 +86,13 @@ func main() {
 				continue
 			}
 			for _, tag := range device.SharedPools {
-				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false)
+				// if we have a MAC stored for this vlan we also send the response packet directly to it
+				if clientMAC, ok := lastquery[tag]; ok {
+					fmt.Println("Sending direct packet to MAC %s", *bonjourPacket.srcMAC)
+					sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, clientMAC)
+				}
+				// we always forward the multicast answer
+				sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, *bonjourPacket.dstMAC)
 			}
 		}
 	}

@@ -42,7 +42,7 @@ func parsePacketsLazily(source *gopacket.PacketSource) chan bonjourPacket {
 
 			// Pass on the packet for its next adventure
 			packetChan <- bonjourPacket{
-			packet:     packet,
+				packet:     packet,
 				vlanTag:    tag,
 				srcMAC:     srcMAC,
 				dstMAC:     dstMAC,
@@ -80,6 +80,7 @@ func parseIPLayer(packet gopacket.Packet) (isIPv6 bool, srcIP *net.IP) {
 		isIPv6 = true
 		srcIP = &parsedIP.(*layers.IPv6).SrcIP
 	}
+	
 	return
 }
 
@@ -102,9 +103,18 @@ type packetWriter interface {
 	WritePacketData([]byte) error
 }
 
-func sendBonjourPacket(handle packetWriter, bonjourPacket *bonjourPacket, tag uint16, brMACAddress net.HardwareAddr, spoofAddr net.IP, spoof bool) {
+func sendBonjourPacket(
+	handle packetWriter,
+	bonjourPacket *bonjourPacket,
+	tag uint16,
+	brMACAddress net.HardwareAddr,
+	srcIPAddress net.IP,
+	spoofsrcIP bool,
+	dstMACAddress net.HardwareAddr) {
 	*bonjourPacket.vlanTag = tag
 	*bonjourPacket.srcMAC = brMACAddress
+	*bonjourPacket.dstMAC = dstMACAddress
+
 	
 	// Network devices may set dstMAC to the local MAC address
 	// Rewrite dstMAC to ensure that it is set to the appropriate multicast MAC address
