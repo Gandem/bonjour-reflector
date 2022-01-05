@@ -71,7 +71,7 @@ func main() {
 		if bonjourPacket.isDNSQuery {
 			// We store the MAC of the last client that sent a query so we can send the response directly to it
 			lastquery[*bonjourPacket.vlanTag]=*bonjourPacket.srcMAC
-			fmt.Println("Storing MAC %s for vlan %d", *bonjourPacket.srcMAC, *bonjourPacket.vlanTag)
+			fmt.Printf("Storing MAC %v for vlan %v \n", *bonjourPacket.srcMAC, *bonjourPacket.vlanTag)
 			tags, ok := poolsMap[*bonjourPacket.vlanTag]
 			if !ok {
 				continue
@@ -88,7 +88,7 @@ func main() {
 			for _, tag := range device.SharedPools {
 				// if we have a MAC stored for this vlan we also send the response packet directly to it
 				if clientMAC, ok := lastquery[tag]; ok {
-					fmt.Println("Sending direct packet to MAC %s", *bonjourPacket.srcMAC)
+					fmt.Printf("Sending direct packet to MAC %v \n", *bonjourPacket.srcMAC)
 					sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, clientMAC)
 				}
 				// we always forward the multicast answer
