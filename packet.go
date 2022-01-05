@@ -13,6 +13,7 @@ type bonjourPacket struct {
 	dstMAC     *net.HardwareAddr
 	isIPv6     bool
 	srcIP     *net.IP
+	dstIP     *net.IP
 	vlanTag    *uint16
 	isDNSQuery bool
 }
@@ -110,20 +111,23 @@ func sendBonjourPacket(
 	brMACAddress net.HardwareAddr,
 	srcIPAddress net.IP,
 	spoofsrcIP bool,
-	dstMACAddress net.HardwareAddr) {
+	dstMACAddress net.HardwareAddr,
+	spoofdstMAC bool) {
 	*bonjourPacket.vlanTag = tag
 	*bonjourPacket.srcMAC = brMACAddress
-	*bonjourPacket.dstMAC = dstMACAddress
+	
 
 	
 	// Network devices may set dstMAC to the local MAC address
 	// Rewrite dstMAC to ensure that it is set to the appropriate multicast MAC address
 	if bonjourPacket.isIPv6 {
 		*bonjourPacket.dstMAC = net.HardwareAddr{0x33, 0x33, 0x00, 0x00, 0x00, 0xFB}
+	} else if spoofdstMAC && bonjourPacket.isIPv6 == false {
+		*bonjourPacket.dstMAC = dstMACAddress
 	} else {
 		*bonjourPacket.dstMAC = net.HardwareAddr{0x01, 0x00, 0x5E, 0x00, 0x00, 0xFB}
 	}
-	
+	 
 	
 	buf := gopacket.NewSerializeBuffer()
 	serializeOptions := gopacket.SerializeOptions{}

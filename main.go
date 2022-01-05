@@ -89,7 +89,7 @@ func main() {
 			for _, tag := range device.SharedPools {
 				// if we have a MAC stored for this vlan we also send the response packet directly to it
 				if clientMAC, ok := lastquery[tag]; ok {
-					fmt.Printf("Sending direct packet to MAC %v \n", *bonjourPacket.srcMAC)
+					fmt.Printf("Sending direct packet to MAC %v \n", clientMAC)
 					sendBonjourPacket(rawTraffic, &bonjourPacket, tag, brMACAddress, spoofAddr, false, clientMAC)
 				}
 				// we always forward the multicast answer
