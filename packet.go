@@ -13,7 +13,6 @@ type bonjourPacket struct {
 	dstMAC     *net.HardwareAddr
 	isIPv6     bool
 	srcIP     *net.IP
-	dstIP     *net.IP
 	vlanTag    *uint16
 	isDNSQuery bool
 }
