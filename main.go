@@ -61,7 +61,8 @@ func main() {
 	source := gopacket.NewPacketSource(rawTraffic, decoder)
 	bonjourPackets := parsePacketsLazily(source)
 
-	var lastquery map[uint16]net.HardwareAddr
+	// Map for the vlan to last MAC query
+	lastquery := make(map[uint16]net.HardwareAddr)
 
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
