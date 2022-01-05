@@ -130,9 +130,9 @@ func sendBonjourPacket(
 	
 	// We change the Source IP address of the mDNS query since Chromecasts ignore
 	// packets coming from outside their subnet.
-	if spoof && bonjourPacket.isIPv6 == false {
+	if spoofsrcIP && bonjourPacket.isIPv6 == false {
 		serializeOptions = gopacket.SerializeOptions{ComputeChecksums: true}
-		*bonjourPacket.srcIP = spoofAddr
+		*bonjourPacket.srcIP = srcIPAddress
 		// We recalculate the checksum since the IP was modified
 		if parsedIP := bonjourPacket.packet.Layer(layers.LayerTypeIPv4); parsedIP != nil {
 			if parsedUDP := bonjourPacket.packet.Layer(layers.LayerTypeUDP); parsedUDP != nil {
