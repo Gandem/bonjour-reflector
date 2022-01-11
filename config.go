@@ -11,6 +11,7 @@ type macAddress string
 type brconfig struct {
 	NetInterface string                       `toml:"net_interface"`
 	Devices      map[macAddress]bonjourDevice `toml:"devices"`
+	SpoofAddr    string                       `toml:"cc_subnet_ip"`
 }
 
 type bonjourDevice struct {
