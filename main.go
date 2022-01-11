@@ -70,7 +70,7 @@ func main() {
 	// Process Bonjours packets
 	for bonjourPacket := range bonjourPackets {
 		if *verbose {
-				fmt.Println(bonjourPacket.packet.String())
+			fmt.Println(bonjourPacket.packet.String())
 		}
 
 		// Forward the mDNS query or response to appropriate VLANs
@@ -79,8 +79,8 @@ func main() {
 			if *aggressiveMode {
 				// We store the MAC of the last client that sent a query so we can send the response directly to it
 				if clientMAC, ok := lastquery[*bonjourPacket.vlanTag]; !ok || clientMAC.String() != bonjourPacket.srcMAC.String(){
-						fmt.Printf("Storing new MAC %v for vlan %v \n", *bonjourPacket.srcMAC, *bonjourPacket.vlanTag)
-						lastquery[*bonjourPacket.vlanTag]=*bonjourPacket.srcMAC
+					fmt.Printf("Storing new MAC %v for vlan %v \n", *bonjourPacket.srcMAC, *bonjourPacket.vlanTag)
+					lastquery[*bonjourPacket.vlanTag]=*bonjourPacket.srcMAC
 				}
 			}
 
