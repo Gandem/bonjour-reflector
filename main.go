@@ -50,6 +50,9 @@ func main() {
 		log.Fatalf("Could not apply filter on network interface: %v", err)
 	}
 
+	// Drop privileges if supported on the target OS
+	dropPrivilegesIfSupported()
+
 	// Get a channel of Bonjour packets to process
 	decoder := gopacket.DecodersByLayerName["Ethernet"]
 	source := gopacket.NewPacketSource(rawTraffic, decoder)
